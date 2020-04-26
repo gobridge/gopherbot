@@ -1,1 +1,1 @@
-web: gateway
+web: bin/gateway
