@@ -130,7 +130,7 @@ func RunServer(cfg config.C) error {
 	<-serveStop
 
 	// log errors for informational purposes
-	logger.Info().Interface("serve_err", serveErr).Interface("shutdown_err", shutdownErr).Msg("server shut down")
+	logger.Info().AnErr("serve_err", serveErr).AnErr("shutdown_err", shutdownErr).Msg("server shut down")
 
 	return nil
 }
