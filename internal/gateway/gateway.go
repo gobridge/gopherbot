@@ -28,8 +28,12 @@ func RunServer(cfg config.C) error {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGINT)
 
+	// set up zerolog
+	zerolog.TimestampFieldName = "timestamp"
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
+
 	// set up logging
-	logger := zerolog.New(os.Stdout)
+	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	logger.Level(zerolog.DebugLevel)
 
 	// get redis config ready
@@ -79,21 +83,23 @@ func RunServer(cfg config.C) error {
 	mux.HandleFunc("/_ruok", srv.handleRUOK)
 	mux.HandleFunc("/slack/event", srv.handleSlackEvent)
 
-	// set up the HTTP server
-	httpSrvr := &http.Server{
-		Addr:        fmt.Sprintf("0.0.0.0:%d", cfg.Port),
-		Handler:     mux,
-		ReadTimeout: 20 * time.Second,
-		IdleTimeout: 60 * time.Second,
-	}
+	socketAddr := fmt.Sprintf("0.0.0.0:%d", cfg.Port)
+	logger.Info().Str("addr", socketAddr).Msg("binding to TCP socket")
 
 	// set up the network socket
-	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.Port))
+	listener, err := net.Listen("tcp", socketAddr)
 	if err != nil {
 		return fmt.Errorf("failed to open HTTP socket: %w", err)
 	}
 
 	defer func() { _ = listener.Close() }()
+
+	// set up the HTTP server
+	httpSrvr := &http.Server{
+		Handler:     mux,
+		ReadTimeout: 20 * time.Second,
+		IdleTimeout: 60 * time.Second,
+	}
 
 	serveStop, serverShutdown := make(chan struct{}), make(chan struct{})
 	var serveErr, shutdownErr error
