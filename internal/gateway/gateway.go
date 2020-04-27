@@ -54,7 +54,7 @@ func RunServer(cfg config.C) error {
 	c := redis.NewClient(redisOpts)
 	defer func() { _ = c.Close() }()
 	key := fmt.Sprintf("heartbeat:%s:%s", cfg.Heroku.AppName, cfg.Heroku.DynoID)
-	res := c.Set(key, time.Now().Unix(), 0)
+	res := c.Set(key, time.Now().Unix(), 36*time.Hour)
 	if err := res.Err(); err != nil {
 		logger.Error().Err(err).Msg("failed to set Redis key")
 	}
