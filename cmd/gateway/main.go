@@ -15,6 +15,11 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/favicon.ico" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = io.WriteString(w, "no")
+			return
+		}
 		_, _ = io.WriteString(w, "Hello World!")
 	})
 
