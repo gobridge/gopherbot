@@ -1,3 +1,13 @@
 #!/bin/bash
 
-mv ./bin/gateway ./cmd/gateway/
+for prog in gateway; do
+    echo "==> creating ./cmd/${prog}/bin"
+    mkdir -p ./cmd/${prog}/bin
+
+    echo "==> copying ./bin/${prog} to ./cmd/${prog}/bin"
+    cp ./bin/${prog} ./cmd/${prog}/bin/
+
+    echo "==> copying ./cmd/${prog}/Procfile to ./cmd/${prog}/bin/Procfile"
+    cp ./cmd/${prog}/Procfile ./cmd/${prog}/bin/
+done
+
