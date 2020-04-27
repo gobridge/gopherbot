@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 func main() {
