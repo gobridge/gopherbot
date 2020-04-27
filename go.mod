@@ -8,6 +8,8 @@ require (
 	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/google/go-cmp v0.4.0
 	github.com/heroku/x v0.0.22
+	github.com/onsi/ginkgo v1.10.1 // indirect
+	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/robinjoseph08/redisqueue v1.0.1
 	github.com/rs/zerolog v1.18.0
 	github.com/slack-go/slack v0.6.4
