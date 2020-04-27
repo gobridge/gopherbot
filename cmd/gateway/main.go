@@ -3,16 +3,18 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"os"
 
 	_ "github.com/heroku/x/hmetrics/onload"
+
+	"github.com/theckman/gopher2/config"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if len(port) == 0 {
-		panic("PORT environment variable must be set")
+	cfg, err := config.LoadEnv()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -25,5 +27,7 @@ func main() {
 		_, _ = io.WriteString(w, "Hello World!")
 	})
 
-	fmt.Println(http.ListenAndServe("0.0.0.0:"+port, mux))
+	serverAddr := fmt.Sprintf("0.0.0.0:%d", cfg.Port)
+
+	fmt.Println(http.ListenAndServe(serverAddr, mux))
 }
