@@ -1,0 +1,79 @@
+# github.com/fatih/color v1.7.0
+github.com/fatih/color
+# github.com/git-chglog/git-chglog v0.0.0-20190611050339-63a4e637021f
+github.com/git-chglog/git-chglog
+github.com/git-chglog/git-chglog/cmd/git-chglog
+# github.com/go-redis/redis v6.15.7+incompatible
+## explicit
+github.com/go-redis/redis
+github.com/go-redis/redis/internal
+github.com/go-redis/redis/internal/consistenthash
+github.com/go-redis/redis/internal/hashtag
+github.com/go-redis/redis/internal/pool
+github.com/go-redis/redis/internal/proto
+github.com/go-redis/redis/internal/util
+# github.com/google/go-cmp v0.4.0
+## explicit
+github.com/google/go-cmp/cmp
+github.com/google/go-cmp/cmp/internal/diff
+github.com/google/go-cmp/cmp/internal/flags
+github.com/google/go-cmp/cmp/internal/function
+github.com/google/go-cmp/cmp/internal/value
+# github.com/gorilla/websocket v1.2.0
+github.com/gorilla/websocket
+# github.com/heroku/x v0.0.22
+## explicit
+github.com/heroku/x/hmetrics
+github.com/heroku/x/hmetrics/onload
+# github.com/imdario/mergo v0.3.7
+github.com/imdario/mergo
+# github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+github.com/kballard/go-shellquote
+# github.com/mattn/go-colorable v0.1.2
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.8
+github.com/mattn/go-isatty
+# github.com/mattn/goveralls v0.0.2
+github.com/mattn/goveralls
+# github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
+github.com/mgutz/ansi
+# github.com/onsi/ginkgo v1.10.1
+## explicit
+# github.com/onsi/gomega v1.7.0
+## explicit
+# github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
+github.com/pkg/errors
+# github.com/robinjoseph08/redisqueue v1.0.1
+## explicit
+github.com/robinjoseph08/redisqueue
+# github.com/rs/zerolog v1.18.0
+## explicit
+github.com/rs/zerolog
+github.com/rs/zerolog/internal/cbor
+github.com/rs/zerolog/internal/json
+# github.com/slack-go/slack v0.6.4
+## explicit
+github.com/slack-go/slack
+github.com/slack-go/slack/internal/errorsx
+github.com/slack-go/slack/internal/timex
+github.com/slack-go/slack/slackutilsx
+# github.com/tsuyoshiwada/go-gitcmd v0.0.0-20180205145712-5f1f5f9475df
+github.com/tsuyoshiwada/go-gitcmd
+# github.com/urfave/cli v1.21.0
+github.com/urfave/cli
+# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
+golang.org/x/sys/unix
+# golang.org/x/tools v0.0.0-20200420001825-978e26b7c37c
+## explicit
+golang.org/x/tools/cover
+# gopkg.in/AlecAivazis/survey.v1 v1.8.5
+gopkg.in/AlecAivazis/survey.v1
+gopkg.in/AlecAivazis/survey.v1/core
+gopkg.in/AlecAivazis/survey.v1/terminal
+# gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
+## explicit
+# gopkg.in/kyokomi/emoji.v1 v1.5.1
+gopkg.in/kyokomi/emoji.v1
+# gopkg.in/yaml.v2 v2.2.4
+## explicit
+gopkg.in/yaml.v2
