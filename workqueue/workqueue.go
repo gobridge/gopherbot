@@ -30,9 +30,9 @@ const (
 	// SlackMessageAppHome is the Event for a message with a channel_type of "app_home"
 	SlackMessageAppHome Event = slackPrivateMessage
 
-	// SlackMessageGroups is the Event for a message with a channel_type of "group",
+	// SlackMessageGroup is the Event for a message with a channel_type of "group",
 	// aka a private channel
-	SlackMessageGroups Event = slackPrivateMessage
+	SlackMessageGroup Event = slackPrivateMessage
 
 	// SlackMessageIM is the Event for a message with a channel_type of "im",
 	// aka a DM
@@ -125,14 +125,15 @@ func New(cfg Config) (*Q, error) {
 }
 
 // Publish takes an Event, which roughly map to different Slack event types, the event timestamp (from the Slack side),
-func (q *Q) Publish(e Event, eventTimestamp int64, eventID, jsonData string) error {
+func (q *Q) Publish(e Event, eventTimestamp int64, eventID, requestID string, jsonData []byte) error {
 	return q.p.Enqueue(&redisqueue.Message{
 		Stream: string(e),
 		Values: map[string]interface{}{
+			"request_id": requestID,
 			"gateway_ts": strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10),
 			"event_ts":   strconv.FormatInt(eventTimestamp, 10),
 			"event_id":   eventID,
-			"json":       jsonData,
+			"json":       string(jsonData),
 		},
 	})
 }

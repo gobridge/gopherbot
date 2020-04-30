@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	slackTimestamp = "X-Slack-Request-Timestamp"
-	slackSignature = "X-Slack-Signature"
+	SlackTimestampHeader = "X-Slack-Request-Timestamp"
+	SlackSignatureHeader = "X-Slack-Signature"
 )
 
 // Request represents the pieces of a request needed to do a signature
@@ -33,7 +33,7 @@ type Request struct {
 func parseTimestamp(r Request) (int64, error) {
 	ts, err := strconv.ParseInt(r.T, 10, 64)
 	if err != nil {
-		return -1, fmt.Errorf("failed to parse %s header: %w", slackTimestamp, err)
+		return -1, fmt.Errorf("failed to parse %s header: %w", SlackTimestampHeader, err)
 	}
 
 	if time.Now().Unix()-ts > 300 { // was this at least 5
@@ -59,11 +59,11 @@ func genHMAC(key, data string) string {
 // making the request.
 func Validate(key string, r Request) error {
 	if len(r.T) == 0 {
-		return fmt.Errorf("%s header not present", slackTimestamp)
+		return fmt.Errorf("%s header not present", SlackTimestampHeader)
 	}
 
 	if len(r.S) == 0 {
-		return fmt.Errorf("%s header not present", slackSignature)
+		return fmt.Errorf("%s header not present", SlackSignatureHeader)
 	}
 
 	ts, err := parseTimestamp(r)

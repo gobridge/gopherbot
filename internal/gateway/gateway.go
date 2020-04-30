@@ -31,10 +31,11 @@ func RunServer(cfg config.C) error {
 	// set up zerolog
 	zerolog.TimestampFieldName = "timestamp"
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
+	zerolog.SetGlobalLevel(cfg.LogLevel)
 
 	// set up logging
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	logger.Level(zerolog.DebugLevel)
+	logger := zerolog.New(os.Stdout).
+		With().Timestamp().Logger()
 
 	// get redis config ready
 	redisOpts := &redis.Options{
@@ -81,10 +82,22 @@ func RunServer(cfg config.C) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", srv.handleNotFound)
 	mux.HandleFunc("/_ruok", srv.handleRUOK)
-	mux.HandleFunc("/slack/event", srv.handleSlackEvent)
+
+	// wrap our slack event handler in the slackSignature middleware.
+	// wrap the slackSignature middleware in the context / heroku header middleware
+	slackHandler := chMiddlewareFactory(
+		logger,
+		slackSignatureMiddlewareFactory(
+			cfg.Slack.RequestSecret, cfg.Slack.RequestToken, cfg.Slack.AppID, &logger, srv.handleSlackEvent,
+		),
+	)
+
+	mux.HandleFunc("/slack/event", slackHandler)
 
 	socketAddr := fmt.Sprintf("0.0.0.0:%d", cfg.Port)
-	logger.Info().Str("addr", socketAddr).Msg("binding to TCP socket")
+	logger.Info().
+		Str("addr", socketAddr).
+		Msg("binding to TCP socket")
 
 	// set up the network socket
 	listener, err := net.Listen("tcp", socketAddr)
@@ -115,13 +128,17 @@ func RunServer(cfg config.C) error {
 		defer close(serverShutdown)
 		sig := <-signalCh
 
-		logger.Info().Str("signal", sig.String()).Msg("shutting HTTP server down gracefully")
+		logger.Info().
+			Str("signal", sig.String()).
+			Msg("shutting HTTP server down gracefully")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 
 		if shutdownErr = httpSrvr.Shutdown(ctx); shutdownErr != nil {
-			logger.Error().Err(shutdownErr).Msg("failed to gracefully shut down HTTP server")
+			logger.Error().
+				Err(shutdownErr).
+				Msg("failed to gracefully shut down HTTP server")
 		}
 	}()
 
@@ -130,7 +147,10 @@ func RunServer(cfg config.C) error {
 	<-serveStop
 
 	// log errors for informational purposes
-	logger.Info().AnErr("serve_err", serveErr).AnErr("shutdown_err", shutdownErr).Msg("server shut down")
+	logger.Info().
+		AnErr("serve_err", serveErr).
+		AnErr("shutdown_err", shutdownErr).
+		Msg("server shut down")
 
 	return nil
 }
