@@ -166,6 +166,23 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			return
 		}
 
+		typeValue, err := getJSONString(document, "type")
+		if err != nil {
+			logger.Error().
+				Err(err).
+				Msg("failed to validate Slack request")
+
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// the following items will NOT be present
+		// so let's skip them
+		if typeValue == "url_verification" {
+			next(w, r)
+			return
+		}
+
 		rAppID, err := getJSONString(document, "api_app_id")
 		if err != nil {
 			logger.Error().
@@ -183,21 +200,6 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		typeValue, err := getJSONString(document, "type")
-		if err != nil {
-			logger.Error().
-				Err(err).
-				Msg("failed to validate Slack request")
-
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if typeValue == "url_verification" {
-			next(w, r)
 			return
 		}
 
