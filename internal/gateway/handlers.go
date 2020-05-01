@@ -70,6 +70,36 @@ const (
 	maxBodySize = 2 * 1024 * 1024 // 2 MB
 )
 
+func getJSONString(document *fastjson.Value, key string) (string, error) {
+	if !document.Exists(key) {
+		return "", fmt.Errorf("failed to get field %s: key does not exist", key)
+	}
+
+	v, err := document.Get(key).StringBytes()
+	if err != nil {
+		return "", fmt.Errorf("failed to get field %s: %w", key, err)
+	}
+
+	s := make([]byte, len(v))
+
+	copy(s, v)
+
+	return string(s), nil
+}
+
+func getJSONInt64(document *fastjson.Value, key string) (int64, error) {
+	if !document.Exists(key) {
+		return -1, fmt.Errorf("failed to get field %s: key does not exist", key)
+	}
+
+	v, err := document.Get(key).Int64()
+	if err != nil {
+		return -1, fmt.Errorf("failed to get field %s: %w", key, err)
+	}
+
+	return v, nil
+}
+
 func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *zerolog.Logger, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lc := baseLogger.With()
@@ -88,6 +118,8 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		r.Body = ioutil.NopCloser(bytes.NewReader(body))
 
 		// validate that the signature looks good
 		err = signing.Validate(hmacKey, signing.Request{
@@ -114,159 +146,117 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			return
 		}
 
-		if !document.Exists("token") {
+		rToken, err := getJSONString(document, "token")
+		if err != nil {
 			logger.Error().
-				Str("error", "missing token field").
+				Err(err).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		rToken := document.Get("token")
-		if rt := rToken.String(); rt != token {
+		if rToken != token {
 			logger.Error().
 				Str("error", "mismatched token").
-				Str("token", rt).
-				Str("expected", token).
+				Str("token", rToken).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		if !document.Exists("api_app_id") {
+		rAppID, err := getJSONString(document, "api_app_id")
+		if err != nil {
 			logger.Error().
-				Str("error", "missing api_app_id field").
+				Err(err).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		rAppID := document.Get("api_app_id")
-		if rai := rAppID.String(); rai != appID {
+		if rAppID != appID {
 			logger.Error().
 				Str("error", "mismatched api_app_id").
-				Str("api_app_id", rai).
+				Str("api_app_id", rAppID).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		if !document.Exists("type") {
+		typeValue, err := getJSONString(document, "type")
+		if err != nil {
 			logger.Error().
-				Str("error", "missing type field").
+				Err(err).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		typeValue := document.Get("type")
-		if typ := typeValue.Type(); typ != fastjson.TypeString {
-			logger.Error().
-				Str("error", "type field is not a string").
-				Msg("failed to validate Slack request")
-
-			w.WriteHeader(http.StatusBadRequest)
-			return
-
-		}
-
-		if typeValue.String() == "url_verification" {
+		if typeValue == "url_verification" {
 			next(w, r)
 			return
 		}
 
-		if !document.Exists("team_id") {
+		rTeamID, err := getJSONString(document, "team_id")
+		if err != nil {
 			logger.Error().
-				Str("error", "missing team_id field").
+				Err(err).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
-			return
 		}
 
-		rTeamID := document.Get("team_id")
-		if rti := rTeamID.String(); rti != slackTeamID {
+		if rTeamID != slackTeamID {
 			logger.Error().
 				Str("error", "mismatched team_id").
-				Str("team_id", rti).
+				Str("team_id", rTeamID).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		r.Body = ioutil.NopCloser(bytes.NewReader(body))
 		next(w, r)
 	}
 }
 
-func requestValues(document *fastjson.Value) (eventType, eventID string, eventTime int64, err error) {
-	if !document.Exists("type") {
-		return "", "", 0, errors.New("type field missing")
+func requestValues(document *fastjson.Value) (eventType, eventID string, eventTimestamp int64, err error) {
+	eventType, err = getJSONString(document, "type")
+	if err != nil {
+		return "", "", 0, fmt.Errorf("failed to get type field: %w", err)
 	}
-
-	v := document.Get("type")
-	if typ := v.Type(); typ != fastjson.TypeString {
-		return "", "", 0, fmt.Errorf("type field is a %s, want a string", typ)
-	}
-
-	eventType = v.String()
 
 	if eventType == "url_verification" {
 		return
 	}
 
-	if !document.Exists("event_id") {
-		return "", "", 0, errors.New("event_id field missing")
-	}
-
-	if !document.Exists("event_id") {
-		return "", "", 0, errors.New("event_id field missing")
-	}
-
-	if !document.Exists("event_time") {
-		return "", "", 0, errors.New("event_time field missing")
-	}
-
-	if !document.Exists("event") {
-		return "", "", 0, errors.New("event field mising")
-	}
-
-	v = document.Get("event_id")
-	if typ := v.Type(); typ != fastjson.TypeString {
-		return "", "", 0, fmt.Errorf("event_id field is a %s, want a string", typ)
-	}
-
-	eventID = v.String()
-
-	v = document.Get("event_time")
-	if typ := v.Type(); typ != fastjson.TypeNumber {
-		return "", "", 0, fmt.Errorf("event_id field is a %s, want a number", typ)
-	}
-
-	eventTime, err = v.Int64()
+	eventID, err = getJSONString(document, "event_id")
 	if err != nil {
-		return "", "", 0, fmt.Errorf("failed to parse event_time: %w", err)
+		return "", "", 0, fmt.Errorf("failed to get event_id field")
+	}
+
+	eventTimestamp, err = getJSONInt64(document, "event_time")
+	if err != nil {
+		return "", "", 0, fmt.Errorf("failed to get event_time field: %w", err)
 	}
 
 	return
 }
 
 func urlVerification(w http.ResponseWriter, r *http.Request, document *fastjson.Value, logger zerolog.Logger) {
-	if !document.Exists("challenge") {
+	challenge, err := getJSONString(document, "challenge")
+	if err != nil {
 		logger.Error().
-			Str("error", "challenge field missing").
+			Err(err).
 			Msg("failed URL verification")
+
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-
-	challenge := document.Get("challenge").String()
 
 	w.Header().Set("Content-Type", "plain/text")
 	fmt.Fprint(w, challenge)
