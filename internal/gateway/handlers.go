@@ -123,24 +123,6 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			return
 		}
 
-		if !document.Exists("team_id") {
-			logger.Error().
-				Str("error", "missing team_id field").
-				Msg("failed to validate Slack request")
-
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if !document.Exists("app_app_id") {
-			logger.Error().
-				Str("error", "missing api_app_id field").
-				Msg("failed to validate Slack request")
-
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
 		rToken := document.Get("token")
 		if rt := rToken.String(); rt != token {
 			logger.Error().
@@ -152,11 +134,9 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			return
 		}
 
-		rTeamID := document.Get("team_id")
-		if rti := rTeamID.String(); rti != slackTeamID {
+		if !document.Exists("api_app_id") {
 			logger.Error().
-				Str("error", "mismatched team_id").
-				Str("team_id", rti).
+				Str("error", "missing api_app_id field").
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
@@ -168,6 +148,51 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			logger.Error().
 				Str("error", "mismatched api_app_id").
 				Str("api_app_id", rai).
+				Msg("failed to validate Slack request")
+
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if !document.Exists("type") {
+			logger.Error().
+				Str("error", "missing type field").
+				Msg("failed to validate Slack request")
+
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		typeValue := document.Get("type")
+		if typ := typeValue.Type(); typ != fastjson.TypeString {
+			logger.Error().
+				Str("error", "type field is not a string").
+				Msg("failed to validate Slack request")
+
+			w.WriteHeader(http.StatusBadRequest)
+			return
+
+		}
+
+		if typeValue.String() == "url_verification" {
+			next(w, r)
+			return
+		}
+
+		if !document.Exists("team_id") {
+			logger.Error().
+				Str("error", "missing team_id field").
+				Msg("failed to validate Slack request")
+
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		rTeamID := document.Get("team_id")
+		if rti := rTeamID.String(); rti != slackTeamID {
+			logger.Error().
+				Str("error", "mismatched team_id").
+				Str("team_id", rti).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)
