@@ -3,7 +3,6 @@ package gateway
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -265,17 +264,18 @@ func urlVerification(w http.ResponseWriter, r *http.Request, document *fastjson.
 }
 
 func wqEventType(event *fastjson.Value) (workqueue.Event, error) {
-	if !event.Exists("type") {
-		return "", errors.New("type field not present in event")
+	eventType, err := getJSONString(event, "type")
+	if err != nil {
+		return "", fmt.Errorf("failed to get type field: %w", err)
 	}
 
-	switch t := event.Get("type").String(); t {
+	switch eventType {
 	case "message":
 		if !event.Exists("channel_type") {
 			return workqueue.SlackMessageChannel, nil
 		}
 
-		ct := event.Get("channel_type").String()
+		ct, _ := getJSONString(event, "channel_type")
 
 		switch ct {
 		case "app_home":
@@ -292,7 +292,7 @@ func wqEventType(event *fastjson.Value) (workqueue.Event, error) {
 			return workqueue.SlackMessageChannel, nil
 		}
 	default:
-		return "", fmt.Errorf("unknown type %s", t)
+		return "", fmt.Errorf("unknown type %s", eventType)
 	}
 }
 
