@@ -128,6 +128,7 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			logger.Error().
 				Str("error", "mismatched token").
 				Str("token", rt).
+				Str("expected", token).
 				Msg("failed to validate Slack request")
 
 			w.WriteHeader(http.StatusBadRequest)

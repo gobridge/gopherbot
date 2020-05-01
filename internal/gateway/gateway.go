@@ -37,6 +37,12 @@ func RunServer(cfg config.C) error {
 	logger := zerolog.New(os.Stdout).
 		With().Timestamp().Logger()
 
+	logger.Info().
+		Str("slack_request_token", cfg.Slack.RequestToken).
+		Str("slack_client_id", cfg.Slack.ClientID).
+		Str("log_level", cfg.LogLevel.String()).
+		Msg("configuration values")
+
 	// get redis config ready
 	redisOpts := &redis.Options{
 		Network:      "tcp",
