@@ -21,6 +21,7 @@ const (
 	slackPublicMessage  = "slack_message_public"
 	slackPrivateMessage = "slack_message_private"
 	slackTeamJoin       = "slack_team_join"
+	slackChannelJoin    = "slack_channel_join"
 )
 
 const (
@@ -44,6 +45,9 @@ const (
 
 	// SlackTeamJoin is the Event for a team (workspace) join Slack event
 	SlackTeamJoin Event = slackTeamJoin
+
+	// SlackChannelJoin is the Event for a channel (public or private) join Slack event.
+	SlackChannelJoin Event = slackChannelJoin
 )
 
 // MessageHandler is the handler for public Slack messages. The handler

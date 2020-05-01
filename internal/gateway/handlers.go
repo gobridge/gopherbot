@@ -291,6 +291,13 @@ func wqEventType(event *fastjson.Value) (workqueue.Event, error) {
 		default:
 			return workqueue.SlackMessageChannel, nil
 		}
+
+	case "team_join":
+		return workqueue.SlackTeamJoin, nil
+
+	case "member_joined_channel":
+		return workqueue.SlackChannelJoin, nil
+
 	default:
 		return "", fmt.Errorf("unknown type %s", eventType)
 	}
