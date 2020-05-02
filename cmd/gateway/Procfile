@@ -1,1 +1,1 @@
-web: /app/gateway
+web: bin/start-tunnel /app/gateway
