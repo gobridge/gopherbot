@@ -122,9 +122,9 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 
 		// validate that the signature looks good
 		err = signing.Validate(hmacKey, signing.Request{
-			B: body,
-			T: r.Header.Get(signing.SlackTimestampHeader),
-			S: r.Header.Get(signing.SlackSignatureHeader),
+			Body:      body,
+			Timestamp: r.Header.Get(signing.SlackTimestampHeader),
+			Signature: r.Header.Get(signing.SlackSignatureHeader),
 		})
 		if err != nil {
 			logger.Error().
