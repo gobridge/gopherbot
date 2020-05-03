@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -114,6 +115,47 @@ type C struct {
 	Slack S
 }
 
+func secureRedisCredentials(s string) (host, user, password string, err error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	switch u.Scheme {
+	case "rediss":
+		pass, _ := u.User.Password()
+		return u.Host, u.User.Username(), pass, nil
+
+	case "redis":
+		h, p, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			if !strings.Contains(err.Error(), "missing port in address") {
+				return "", "", "", err
+			}
+
+			h = u.Host
+		}
+
+		if p == "" {
+			p = "6379"
+		}
+
+		pi, err := strconv.Atoi(p)
+		if err != nil {
+			return "", "", "", err
+		}
+
+		pi++
+
+		pass, _ := u.User.Password()
+
+		return net.JoinHostPort(h, strconv.Itoa(pi)), u.User.Username(), pass, nil
+
+	default:
+		return "", "", "", fmt.Errorf("unknown scheme: %s", u.Scheme)
+	}
+}
+
 // LoadEnv loads the configuration from the appropriate environment variables.
 func LoadEnv() (C, error) {
 	var c C
@@ -128,17 +170,14 @@ func LoadEnv() (C, error) {
 	}
 
 	if r := os.Getenv("REDIS_URL"); len(r) > 0 {
-		rurl, err := url.Parse(r)
+		a, u, p, err := secureRedisCredentials(r)
 		if err != nil {
 			return C{}, fmt.Errorf("failed to parse REDIS_URL: %w", err)
 		}
 
-		c.Redis.Addr = rurl.Host
-		c.Redis.User = rurl.User.Username()
-
-		if p, ok := rurl.User.Password(); ok {
-			c.Redis.Password = p
-		}
+		c.Redis.Addr = a
+		c.Redis.User = u
+		c.Redis.Password = p
 	}
 
 	ll := os.Getenv("LOG_LEVEL")
@@ -148,7 +187,7 @@ func LoadEnv() (C, error) {
 
 	l, err := zerolog.ParseLevel(ll)
 	if err != nil {
-		return C{}, fmt.Errorf("failed to parse level: %w", err)
+		return C{}, fmt.Errorf("failed to parse LOG_LEVEL: %w", err)
 	}
 
 	c.LogLevel = l
