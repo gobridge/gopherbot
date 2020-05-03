@@ -101,7 +101,7 @@ func TestLoadEnv(t *testing.T) {
 			name: "all_values",
 			before: func() {
 				_ = os.Setenv("PORT", "1234")
-				_ = os.Setenv("REDIS_URL", "redis://u:1234@redis.example.org:4321")
+				_ = os.Setenv("REDIS_URL", "rediss://u:1234@redis.example.org:4321")
 				_ = os.Setenv("ENV", "testing")
 				_ = os.Setenv("LOG_LEVEL", "trace")
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
@@ -150,10 +150,10 @@ func TestLoadEnv(t *testing.T) {
 			},
 		},
 		{
-			name: "no_password_no_level",
+			name: "no_password_no_level_insecure_redis",
 			before: func() {
 				_ = os.Setenv("PORT", "1234")
-				_ = os.Setenv("REDIS_URL", "redis://u@redis.example.org:4321")
+				_ = os.Setenv("REDIS_URL", "redis://u@redis.example.org:4320")
 				_ = os.Setenv("ENV", "testing")
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
@@ -200,6 +200,56 @@ func TestLoadEnv(t *testing.T) {
 			},
 		},
 		{
+			name: "no_password_no_level_insecure_redis_no_port",
+			before: func() {
+				_ = os.Setenv("PORT", "1234")
+				_ = os.Setenv("REDIS_URL", "redis://u@redis.example.org")
+				_ = os.Setenv("ENV", "testing")
+				_ = os.Setenv("HEROKU_APP_ID", "abc123")
+				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
+				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
+				_ = os.Setenv("SLACK_APP_ID", "slack123")
+				_ = os.Setenv("SLACK_CLIENT_ID", "slack890")
+				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
+				_ = os.Setenv("SLACK_REQUEST_SECRET", "slack567")
+				_ = os.Setenv("SLACK_REQUEST_TOKEN", "slack42")
+			},
+			after: func() {
+				s := []string{
+					"PORT", "REDIS_URL", "ENV",
+					"HEROKU_APP_ID", "HEROKU_APP_NAME",
+					"HEROKU_DYNO_ID", "SLACK_APP_ID",
+					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
+					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
+				}
+
+				for _, v := range s {
+					_ = os.Unsetenv(v)
+				}
+			},
+			want: C{
+				LogLevel: zerolog.InfoLevel,
+				Env:      Testing,
+				Port:     1234,
+				Heroku: H{
+					AppID:   "abc123",
+					AppName: "testApp",
+					DynoID:  "def890",
+				},
+				Redis: R{
+					Addr: "redis.example.org:6380",
+					User: "u",
+				},
+				Slack: S{
+					AppID:         "slack123",
+					ClientID:      "slack890",
+					ClientSecret:  "slack456",
+					RequestSecret: "slack567",
+					RequestToken:  "slack42",
+				},
+			},
+		},
+		{
 			name: "bad_REDIS_URL",
 			before: func() {
 				_ = os.Setenv("PORT", "1234")
@@ -223,6 +273,29 @@ func TestLoadEnv(t *testing.T) {
 			err: `failed to parse REDIS_URL: parse "://": missing protocol scheme`,
 		},
 		{
+			name: "unknown_REDIS_URL_scheme",
+			before: func() {
+				_ = os.Setenv("PORT", "1234")
+				_ = os.Setenv("REDIS_URL", "http://")
+				_ = os.Setenv("ENV", "testing")
+				_ = os.Setenv("HEROKU_APP_ID", "abc123")
+				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
+				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
+			},
+			after: func() {
+				s := []string{
+					"PORT", "REDIS_URL", "ENV",
+					"HEROKU_APP_ID", "HEROKU_APP_NAME",
+					"HEROKU_DYNO_ID",
+				}
+
+				for _, v := range s {
+					_ = os.Unsetenv(v)
+				}
+			},
+			err: `failed to parse REDIS_URL: unknown scheme: http`,
+		},
+		{
 			name: "bad_PORT",
 			before: func() {
 				_ = os.Setenv("PORT", "abcxyz")
@@ -243,6 +316,28 @@ func TestLoadEnv(t *testing.T) {
 				}
 			},
 			err: `failed to parse PORT: strconv.ParseUint: parsing "abcxyz": invalid syntax`,
+		},
+		{
+			name: "bad_LOG_LEVEL",
+			before: func() {
+				_ = os.Setenv("LOG_LEVEL", "testfail")
+				_ = os.Setenv("ENV", "testing")
+				_ = os.Setenv("HEROKU_APP_ID", "abc123")
+				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
+				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
+			},
+			after: func() {
+				s := []string{
+					"LOG_LEVEL", "REDIS_URL", "ENV",
+					"HEROKU_APP_ID", "HEROKU_APP_NAME",
+					"HEROKU_DYNO_ID",
+				}
+
+				for _, v := range s {
+					_ = os.Unsetenv(v)
+				}
+			},
+			err: `failed to parse LOG_LEVEL: Unknown Level String: 'testfail', defaulting to NoLevel`,
 		},
 	}
 
