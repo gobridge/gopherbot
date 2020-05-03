@@ -102,6 +102,8 @@ func TestLoadEnv(t *testing.T) {
 			before: func() {
 				_ = os.Setenv("PORT", "1234")
 				_ = os.Setenv("REDIS_URL", "rediss://u:1234@redis.example.org:4321")
+				_ = os.Setenv("REDIS_INSECURE", "1")
+				_ = os.Setenv("REDIS_SKIPVERIFY", "1")
 				_ = os.Setenv("ENV", "testing")
 				_ = os.Setenv("LOG_LEVEL", "trace")
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
@@ -115,8 +117,8 @@ func TestLoadEnv(t *testing.T) {
 			},
 			after: func() {
 				s := []string{
-					"PORT", "REDIS_URL", "ENV", "LOG_LEVEL",
-					"HEROKU_APP_ID", "HEROKU_APP_NAME",
+					"PORT", "REDIS_URL", "REDIS_INSECURE", "REDIS_SKIPVERIFY",
+					"ENV", "LOG_LEVEL", "HEROKU_APP_ID", "HEROKU_APP_NAME",
 					"HEROKU_DYNO_ID", "SLACK_APP_ID",
 					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
 					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
@@ -136,9 +138,11 @@ func TestLoadEnv(t *testing.T) {
 					DynoID:  "def890",
 				},
 				Redis: R{
-					Addr:     "redis.example.org:4321",
-					User:     "u",
-					Password: "1234",
+					Addr:       "redis.example.org:4321",
+					User:       "u",
+					Password:   "1234",
+					Insecure:   true,
+					SkipVerify: true,
 				},
 				Slack: S{
 					AppID:         "slack123",
@@ -154,6 +158,8 @@ func TestLoadEnv(t *testing.T) {
 			before: func() {
 				_ = os.Setenv("PORT", "1234")
 				_ = os.Setenv("REDIS_URL", "redis://u@redis.example.org:4320")
+				_ = os.Setenv("REDIS_INSECURE", "2")
+				_ = os.Setenv("REDIS_SKIPVERIFY", "2")
 				_ = os.Setenv("ENV", "testing")
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
@@ -166,8 +172,8 @@ func TestLoadEnv(t *testing.T) {
 			},
 			after: func() {
 				s := []string{
-					"PORT", "REDIS_URL", "ENV",
-					"HEROKU_APP_ID", "HEROKU_APP_NAME",
+					"PORT", "REDIS_URL", "REDIS_INSECURE", "REDIS_SKIPVERIFY",
+					"ENV", "HEROKU_APP_ID", "HEROKU_APP_NAME",
 					"HEROKU_DYNO_ID", "SLACK_APP_ID",
 					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
 					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
