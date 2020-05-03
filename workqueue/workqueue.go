@@ -61,7 +61,25 @@ type MessageHandler func(ctx context.Context, m *slack.MessageEvent) (noAck bool
 // MessageHandler type.
 type TeamJoinHandler func(ctx context.Context, t *slack.TeamJoinEvent) (noAck bool, err error)
 
-// Config is the Q configuration
+// Publisher is the interface for the workqueue publish behavior.
+type Publisher interface {
+	Publish(e Event, eventTimestamp int64, eventID, requetID string, jsonData []byte) error
+}
+
+// Registerer is the interface for handler registrations within the workqueue.
+type Registerer interface {
+	RegisterTeamJoinHandler(timeout time.Duration, fn TeamJoinHandler)
+	RegisterPublicMessageHandler(timeout time.Duration, fn MessageHandler)
+	RegisterPrivateMessageHandler(timeout time.Duration, fn MessageHandler)
+}
+
+// Q is an interface to describe the entirety of the workqueue.
+type Q interface {
+	Publisher
+	Registerer
+}
+
+// Config is the I configuration
 type Config struct {
 	// ConsumerName is this node's unique identifier. Leave blank to use
 	// hostname.
@@ -84,18 +102,21 @@ type Config struct {
 	Logger *zerolog.Logger
 }
 
-// Q is the workqueue struct
-type Q struct {
+// I is the workqueue struct, which satisfies Q.
+type I struct {
 	p *redisqueue.Producer
 	c *redisqueue.Consumer
 
 	l *zerolog.Logger
 }
 
-// New returns a new *Q or an error. The consumerName, consumerGroup, and
-// visibilityTimeout can be left at their zero value if you're only using Q to
+// compile time check: does *I satisfy Q?
+var _ Q = (*I)(nil)
+
+// New returns a new *I or an error. The consumerName, consumerGroup, and
+// visibilityTimeout can be left at their zero value if you're only using I to
 // publish.
-func New(cfg Config) (*Q, error) {
+func New(cfg Config) (*I, error) {
 	p, err := redisqueue.NewProducerWithOptions(&redisqueue.ProducerOptions{
 		ApproximateMaxLength: true,
 		StreamMaxLength:      1024,
@@ -119,17 +140,17 @@ func New(cfg Config) (*Q, error) {
 		return nil, fmt.Errorf("failed to prepare consumer: %w", err)
 	}
 
-	q := &Q{
+	i := &I{
 		p: p,
 		c: c,
 		l: cfg.Logger,
 	}
 
-	return q, nil
+	return i, nil
 }
 
 // Publish takes an Event, which roughly map to different Slack event types, the event timestamp (from the Slack side),
-func (q *Q) Publish(e Event, eventTimestamp int64, eventID, requestID string, jsonData []byte) error {
+func (q *I) Publish(e Event, eventTimestamp int64, eventID, requestID string, jsonData []byte) error {
 	return q.p.Enqueue(&redisqueue.Message{
 		Stream: string(e),
 		Values: map[string]interface{}{
@@ -146,7 +167,7 @@ func (q *Q) Publish(e Event, eventTimestamp int64, eventID, requestID string, js
 // public Slack messages. That would be those sent to a public channel. The
 // timeout argument specifies how long the handler has to complete, before its
 // context is canceled.
-func (q *Q) RegisterPublicMessageHandler(timeout time.Duration, fn MessageHandler) {
+func (q *I) RegisterPublicMessageHandler(timeout time.Duration, fn MessageHandler) {
 	q.registerMessageHandler(slackPublicMessage, timeout, fn)
 }
 
@@ -154,17 +175,17 @@ func (q *Q) RegisterPublicMessageHandler(timeout time.Duration, fn MessageHandle
 // private Slack messages. This would be those sent to a private channel, a
 // 1-on-1 DM, or a group DM. The timeout argument specifies how long the handler
 // has to complete, before its context is canceled.
-func (q *Q) RegisterPrivateMessageHandler(timeout time.Duration, fn MessageHandler) {
+func (q *I) RegisterPrivateMessageHandler(timeout time.Duration, fn MessageHandler) {
 	q.registerMessageHandler(slackPrivateMessage, timeout, fn)
 }
 
-func (q *Q) registerMessageHandler(stream string, timeout time.Duration, fn MessageHandler) {
+func (q *I) registerMessageHandler(stream string, timeout time.Duration, fn MessageHandler) {
 	q.c.Register(stream, messageHandlerFactory(q.l, timeout, fn))
 }
 
 // RegisterTeamJoinHandler registers the handler for events related to people
 // joining the Slack workspace.
-func (q *Q) RegisterTeamJoinHandler(timeout time.Duration, fn TeamJoinHandler) {
+func (q *I) RegisterTeamJoinHandler(timeout time.Duration, fn TeamJoinHandler) {
 	q.c.Register(slackTeamJoin, teamJoinHandlerFactory(fn))
 }
 

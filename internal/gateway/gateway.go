@@ -20,7 +20,7 @@ import (
 
 type server struct {
 	l *zerolog.Logger
-	q *workqueue.Q
+	q workqueue.Q
 }
 
 // RunServer starts the gateway HTTP server.
