@@ -3,6 +3,7 @@ package gateway
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -54,6 +55,9 @@ func RunServer(cfg config.C) error {
 		PoolSize:     20,
 		MinIdleConns: 5,
 		PoolTimeout:  5 * time.Second,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true, /* #nosec G402 */
+		},
 	}
 
 	// quick Redis test code
