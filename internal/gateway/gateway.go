@@ -55,9 +55,13 @@ func RunServer(cfg config.C) error {
 		PoolSize:     20,
 		MinIdleConns: 5,
 		PoolTimeout:  5 * time.Second,
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: true, /* #nosec G402 */
-		},
+	}
+
+	// if Redis is TLS secured
+	if !cfg.Redis.Insecure {
+		redisOpts.TLSConfig = &tls.Config{
+			InsecureSkipVerify: cfg.Redis.SkipVerify,
+		} // #nosec G402 -- Heroku Redis has an untrusted cert
 	}
 
 	// quick Redis test code

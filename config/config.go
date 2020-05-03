@@ -53,6 +53,12 @@ type R struct {
 
 	// Password is the Redis password
 	Password string
+
+	// Insecure is whether we should connect to Redis over plain text
+	Insecure bool
+
+	// SkipVerify is whether we skip x.509 certification validation
+	SkipVerify bool
 }
 
 // H is the Heroku environment configuration
@@ -115,7 +121,7 @@ type C struct {
 	Slack S
 }
 
-func secureRedisCredentials(s string) (host, user, password string, err error) {
+func secureRedisCredentials(s string, insecure bool) (host, user, password string, err error) {
 	u, err := url.Parse(s)
 	if err != nil {
 		return "", "", "", err
@@ -145,7 +151,9 @@ func secureRedisCredentials(s string) (host, user, password string, err error) {
 			return "", "", "", err
 		}
 
-		pi++
+		if !insecure { // it's secure
+			pi++
+		}
 
 		pass, _ := u.User.Password()
 
@@ -170,7 +178,10 @@ func LoadEnv() (C, error) {
 	}
 
 	if r := os.Getenv("REDIS_URL"); len(r) > 0 {
-		a, u, p, err := secureRedisCredentials(r)
+		c.Redis.Insecure = os.Getenv("REDIS_INSECURE") == "1"
+		c.Redis.SkipVerify = os.Getenv("REDIS_SKIPVERIFY") == "1"
+
+		a, u, p, err := secureRedisCredentials(r, c.Redis.Insecure)
 		if err != nil {
 			return C{}, fmt.Errorf("failed to parse REDIS_URL: %w", err)
 		}
