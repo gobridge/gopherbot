@@ -39,6 +39,8 @@ func RunServer(cfg config.C) error {
 		With().Timestamp().Logger()
 
 	logger.Info().
+		Str("app", cfg.Heroku.AppName).
+		Str("dyno_id", cfg.Heroku.DynoID).
 		Str("slack_request_token", cfg.Slack.RequestToken).
 		Str("slack_client_id", cfg.Slack.ClientID).
 		Str("log_level", cfg.LogLevel.String()).
