@@ -109,6 +109,7 @@ func TestLoadEnv(t *testing.T) {
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
 				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
+				_ = os.Setenv("HEROKU_SLUG_COMMIT", "deadbeefcafe")
 				_ = os.Setenv("SLACK_APP_ID", "slack123")
 				_ = os.Setenv("SLACK_CLIENT_ID", "slack890")
 				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
@@ -119,7 +120,7 @@ func TestLoadEnv(t *testing.T) {
 				s := []string{
 					"PORT", "REDIS_URL", "REDIS_INSECURE", "REDIS_SKIPVERIFY",
 					"ENV", "LOG_LEVEL", "HEROKU_APP_ID", "HEROKU_APP_NAME",
-					"HEROKU_DYNO_ID", "SLACK_APP_ID",
+					"HEROKU_DYNO_ID", "HEROKU_SLUG_COMMIT", "SLACK_APP_ID",
 					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
 					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
 				}
@@ -136,6 +137,7 @@ func TestLoadEnv(t *testing.T) {
 					AppID:   "abc123",
 					AppName: "testApp",
 					DynoID:  "def890",
+					Commit:  "deadbeefcafe",
 				},
 				Redis: R{
 					Addr:       "redis.example.org:4321",

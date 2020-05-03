@@ -63,14 +63,17 @@ type R struct {
 
 // H is the Heroku environment configuration
 type H struct {
-	// AppID is the Heroku application ID
+	// AppID is the HEROKU_APP_ID
 	AppID string
 
-	// AppName is the Heroku application name
+	// AppName is the HEROKU_APP_NAME
 	AppName string
 
-	// DynoID is the Heroku Dyno ID
+	// DynoID is the HEROKU_DYNO_ID
 	DynoID string
+
+	// Commit is the HEROKU_SLUG_COMMIT
+	Commit string
 }
 
 // S is the Slack environment configuration
@@ -207,6 +210,7 @@ func LoadEnv() (C, error) {
 	c.Heroku.AppID = os.Getenv("HEROKU_APP_ID")
 	c.Heroku.AppName = os.Getenv("HEROKU_APP_NAME")
 	c.Heroku.DynoID = os.Getenv("HEROKU_DYNO_ID")
+	c.Heroku.Commit = os.Getenv("HEROKU_SLUG_COMMIT")
 
 	c.Slack.AppID = os.Getenv("SLACK_APP_ID")
 	c.Slack.ClientID = os.Getenv("SLACK_CLIENT_ID")
