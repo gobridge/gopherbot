@@ -241,19 +241,17 @@ func (s *server) handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 
 	object := obj.MarshalTo(make([]byte, 0, 4*1024))
 
+	err = s.q.Publish(et, eventTimestamp, eventID, rid, object)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to publish event to workqueue")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	logger.Debug().
 		Str("event_type", string(et)).
 		Int64("event_timestamp", eventTimestamp).
 		Str("event_id", eventID).
 		Bool("object_has_len", len(object) > 0).
-		Msg("would publish event")
-
-	/*
-		err = s.q.Publish(et, eventTimestamp, eventID, rid, object)
-		if err != nil {
-			logger.Error().Err(err).Msg("failed to publish event to workqueue")
-			w.WriteHeader(http.StatusInternalServerError)
-
-		}
-	*/
+		Msg("published event")
 }
