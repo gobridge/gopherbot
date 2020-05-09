@@ -51,10 +51,7 @@ func chMiddlewareFactory(baseLogger zerolog.Logger, next http.HandlerFunc) http.
 	}
 }
 
-// TODO(theckman): make this a parameter?
-const slackTeamID = "T029RQSE6"
-
-func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *zerolog.Logger, next http.HandlerFunc) http.HandlerFunc {
+func slackSignatureMiddlewareFactory(hmacKey, token, appID, teamID string, baseLogger *zerolog.Logger, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lc := baseLogger.With()
 
@@ -166,7 +163,7 @@ func slackSignatureMiddlewareFactory(hmacKey, token, appID string, baseLogger *z
 			w.WriteHeader(http.StatusBadRequest)
 		}
 
-		if rTeamID != slackTeamID {
+		if rTeamID != teamID {
 			logger.Error().
 				Str("error", "mismatched team_id").
 				Str("team_id", rTeamID).

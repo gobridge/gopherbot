@@ -105,7 +105,7 @@ func RunServer(cfg config.C) error {
 	slackHandler := chMiddlewareFactory(
 		logger,
 		slackSignatureMiddlewareFactory(
-			cfg.Slack.RequestSecret, cfg.Slack.RequestToken, cfg.Slack.AppID, &logger, srv.handleSlackEvent,
+			cfg.Slack.RequestSecret, cfg.Slack.RequestToken, cfg.Slack.AppID, cfg.Slack.TeamID, &logger, srv.handleSlackEvent,
 		),
 	)
 

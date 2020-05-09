@@ -111,6 +111,7 @@ func TestLoadEnv(t *testing.T) {
 				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
 				_ = os.Setenv("HEROKU_SLUG_COMMIT", "deadbeefcafe")
 				_ = os.Setenv("SLACK_APP_ID", "slack123")
+				_ = os.Setenv("SLACK_TEAM_ID", "xyz890")
 				_ = os.Setenv("SLACK_CLIENT_ID", "slack890")
 				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
 				_ = os.Setenv("SLACK_REQUEST_SECRET", "slack567")
@@ -121,7 +122,7 @@ func TestLoadEnv(t *testing.T) {
 					"PORT", "REDIS_URL", "REDIS_INSECURE", "REDIS_SKIPVERIFY",
 					"ENV", "LOG_LEVEL", "HEROKU_APP_ID", "HEROKU_APP_NAME",
 					"HEROKU_DYNO_ID", "HEROKU_SLUG_COMMIT", "SLACK_APP_ID",
-					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
+					"SLACK_TEAM_ID", "SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
 					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
 				}
 
@@ -148,6 +149,7 @@ func TestLoadEnv(t *testing.T) {
 				},
 				Slack: S{
 					AppID:         "slack123",
+					TeamID:        "xyz890",
 					ClientID:      "slack890",
 					ClientSecret:  "slack456",
 					RequestSecret: "slack567",
@@ -217,6 +219,7 @@ func TestLoadEnv(t *testing.T) {
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
 				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
 				_ = os.Setenv("SLACK_APP_ID", "slack123")
+				_ = os.Setenv("SLACK_TEAM_ID", "xyz890")
 				_ = os.Setenv("SLACK_CLIENT_ID", "slack890")
 				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
 				_ = os.Setenv("SLACK_REQUEST_SECRET", "slack567")
@@ -226,7 +229,7 @@ func TestLoadEnv(t *testing.T) {
 				s := []string{
 					"PORT", "REDIS_URL", "ENV",
 					"HEROKU_APP_ID", "HEROKU_APP_NAME",
-					"HEROKU_DYNO_ID", "SLACK_APP_ID",
+					"HEROKU_DYNO_ID", "SLACK_APP_ID", "SLACK_TEAM_ID",
 					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
 					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
 				}
@@ -250,6 +253,7 @@ func TestLoadEnv(t *testing.T) {
 				},
 				Slack: S{
 					AppID:         "slack123",
+					TeamID:        "xyz890",
 					ClientID:      "slack890",
 					ClientSecret:  "slack456",
 					RequestSecret: "slack567",

@@ -82,6 +82,10 @@ type S struct {
 	// Env: SLACK_APP_ID
 	AppID string
 
+	// TeamID is the workspace the app is deployed to
+	// ENV: SLACK_TEAM_ID
+	TeamID string
+
 	// ClientID is the Client ID
 	// Env: SLACK_CLIENT_ID
 	ClientID string
@@ -213,6 +217,7 @@ func LoadEnv() (C, error) {
 	c.Heroku.Commit = os.Getenv("HEROKU_SLUG_COMMIT")
 
 	c.Slack.AppID = os.Getenv("SLACK_APP_ID")
+	c.Slack.TeamID = os.Getenv("SLACK_TEAM_ID")
 	c.Slack.ClientID = os.Getenv("SLACK_CLIENT_ID")
 	c.Slack.RequestToken = os.Getenv("SLACK_REQUEST_TOKEN")
 

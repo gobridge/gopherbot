@@ -12,6 +12,7 @@ import (
 	"github.com/robinjoseph08/redisqueue"
 	"github.com/rs/zerolog"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
 )
 
 // Event matches external event types to the Redis stream names we're using
@@ -54,7 +55,7 @@ const (
 // signals to the workqueue what to do with the item on failure with the noAck
 // bool. If there is an error, and noAck is true, another worker should pick up
 // the work eventually (assuming there are others).
-type MessageHandler func(ctx context.Context, m *slack.MessageEvent) (noAck bool, err error)
+type MessageHandler func(ctx context.Context, m *slackevents.MessageEvent) (noAck bool, err error)
 
 // TeamJoinHandler is the handler for team_join Slacfk events, used when a new
 // member joins the workspace. For info on noAck please see the comment for the
@@ -149,9 +150,19 @@ func New(cfg Config) (*I, error) {
 	return i, nil
 }
 
+// Run wraps the redisqueue.Consumer.Run method
+func (i *I) Run() {
+	i.c.Run()
+}
+
+// SHutdown wraps the redisqueue.Consumer.Shutdown method
+func (i *I) Shutdown() {
+	i.c.Shutdown()
+}
+
 // Publish takes an Event, which roughly map to different Slack event types, the event timestamp (from the Slack side),
-func (q *I) Publish(e Event, eventTimestamp int64, eventID, requestID string, jsonData []byte) error {
-	return q.p.Enqueue(&redisqueue.Message{
+func (i *I) Publish(e Event, eventTimestamp int64, eventID, requestID string, jsonData []byte) error {
+	return i.p.Enqueue(&redisqueue.Message{
 		Stream: string(e),
 		Values: map[string]interface{}{
 			"request_id": requestID,
@@ -167,26 +178,26 @@ func (q *I) Publish(e Event, eventTimestamp int64, eventID, requestID string, js
 // public Slack messages. That would be those sent to a public channel. The
 // timeout argument specifies how long the handler has to complete, before its
 // context is canceled.
-func (q *I) RegisterPublicMessageHandler(timeout time.Duration, fn MessageHandler) {
-	q.registerMessageHandler(slackPublicMessage, timeout, fn)
+func (i *I) RegisterPublicMessageHandler(timeout time.Duration, fn MessageHandler) {
+	i.registerMessageHandler(slackPublicMessage, timeout, fn)
 }
 
 // RegisterPrivateMessageHandler is the method to register a new handler for
 // private Slack messages. This would be those sent to a private channel, a
 // 1-on-1 DM, or a group DM. The timeout argument specifies how long the handler
 // has to complete, before its context is canceled.
-func (q *I) RegisterPrivateMessageHandler(timeout time.Duration, fn MessageHandler) {
-	q.registerMessageHandler(slackPrivateMessage, timeout, fn)
+func (i *I) RegisterPrivateMessageHandler(timeout time.Duration, fn MessageHandler) {
+	i.registerMessageHandler(slackPrivateMessage, timeout, fn)
 }
 
-func (q *I) registerMessageHandler(stream string, timeout time.Duration, fn MessageHandler) {
-	q.c.Register(stream, messageHandlerFactory(q.l, timeout, fn))
+func (i *I) registerMessageHandler(stream string, timeout time.Duration, fn MessageHandler) {
+	i.c.RegisterWithLastID(stream, "$", messageHandlerFactory(i.l, timeout, fn))
 }
 
 // RegisterTeamJoinHandler registers the handler for events related to people
 // joining the Slack workspace.
-func (q *I) RegisterTeamJoinHandler(timeout time.Duration, fn TeamJoinHandler) {
-	q.c.Register(slackTeamJoin, teamJoinHandlerFactory(fn))
+func (i *I) RegisterTeamJoinHandler(timeout time.Duration, fn TeamJoinHandler) {
+	i.c.RegisterWithLastID(slackTeamJoin, "$", teamJoinHandlerFactory(i.l, timeout, fn))
 }
 
 func messageHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn MessageHandler) redisqueue.ConsumerFunc {
@@ -196,22 +207,37 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn
 		start := time.Now()
 
 		// build message-local logging context
-		logger := flogger.With().Str("redis_message", m.ID).Str("redis_stream", m.Stream).Logger()
+		logger := flogger.With().
+			Str("redis_message", m.ID).
+			Str("redis_stream", m.Stream).
+			Logger()
 
 		eid, et, gt, d, err := parseGatewayMessage(m)
 		if err != nil {
-			logger.Error().Err(err).TimeDiff("duration", time.Now(), start).Msg("failed to parse message from gateway")
+			logger.Error().
+				Err(err).
+				TimeDiff("duration", time.Now(), start).
+				Msg("failed to parse message from gateway")
+
 			return nil
 		}
 
 		// log time fired on Slack side, and time it was enqueued
-		logger = logger.With().Time("event_time", et).Str("event_id", eid).Time("enqueued_time", gt).Logger()
+		logger = logger.With().
+			Time("event_time", et).
+			Str("event_id", eid).
+			Time("enqueued_time", gt).Logger()
 
-		var sm *slack.MessageEvent
+		var sm *slackevents.MessageEvent
 
 		err = json.Unmarshal([]byte(d), &sm)
 		if err != nil {
-			logger.Error().Err(err).TimeDiff("duration", time.Now(), start).Msg("failed to parse message JSON")
+			logger.Error().
+				Err(err).
+				TimeDiff("duration", time.Now(), start).
+				Msg("failed to parse message JSON")
+
+			// we can't process it
 			return nil
 		}
 
@@ -230,10 +256,10 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn
 		logger = logger.With().Dur("handler_duration", hrd).Logger()
 
 		if err != nil {
-			defer func() {
-				logger.Error().Err(err).Bool("no_ack", noAck).
-					TimeDiff("duration", time.Now(), start).Msg("handler failed")
-			}()
+			logger.Error().Err(err).
+				Bool("no_ack", noAck).
+				TimeDiff("duration", time.Now(), start).
+				Msg("handler failed")
 
 			if noAck {
 				return err
@@ -242,32 +268,93 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn
 			return nil
 		}
 
-		defer func() {
-			logger.Info().TimeDiff("duration", time.Now(), start).Msg("complete")
-		}()
+		logger.Info().
+			TimeDiff("duration", time.Now(), start).
+			Msg("complete")
 
 		return nil
 	}
 }
 
-func teamJoinHandlerFactory(fn TeamJoinHandler) redisqueue.ConsumerFunc {
+func teamJoinHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn TeamJoinHandler) redisqueue.ConsumerFunc {
+	flogger := baseLogger.With().Str("handler", "team_join").Logger()
+
 	return func(m *redisqueue.Message) error {
-		_, _, _, d, err := parseGatewayMessage(m)
+		start := time.Now()
+
+		// build message-local logging context
+		logger := flogger.With().
+			Str("redis_message", m.ID).
+			Str("redis_stream", m.Stream).
+			Logger()
+
+		eid, et, gt, d, err := parseGatewayMessage(m)
 		if err != nil {
-			// TODO: logging
-			panic(err.Error())
+			logger.Error().
+				Err(err).
+				TimeDiff("duration", time.Now(), start).
+				Msg("failed to parse message from gateway")
+
+			return nil
 		}
+
+		// log time fired on Slack side, and time it was enqueued
+		logger = logger.With().
+			Time("event_time", et).
+			Str("event_id", eid).
+			Time("enqueued_time", gt).Logger()
 
 		var stj *slack.TeamJoinEvent
 
 		if err := json.Unmarshal([]byte(d), &stj); err != nil {
-			// TODO: logging
+			logger.Error().
+				Err(err).
+				TimeDiff("duration", time.Now(), start).
+				Msg("failed to parse message JSON")
+
+			// we can't process it
 			return nil
 		}
 
-		// TODO: implement me
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+		// used to calculate handler duration
+		bht := time.Now()
+
+		noAck, err := fn(ctx, stj)
+
+		// handler runtime duration
+		hrd := time.Since(bht)
+
+		cancel()
+
+		logger = logger.With().Dur("handler_duration", hrd).Logger()
+
+		if err != nil {
+			logger.Error().Err(err).
+				Bool("no_ack", noAck).
+				TimeDiff("duration", time.Now(), start).
+				Msg("handler failed")
+
+			if noAck {
+				return err
+			}
+
+			return nil
+		}
+
+		logger.Info().
+			TimeDiff("duration", time.Now(), start).
+			Msg("complete")
+
 		return nil
 	}
+}
+
+func unix(i int64) (int64, int64) {
+	// convert milliseconds to whole seconds
+	// convert millisecond remainder from above conversion to nanoseconds
+	return i / 1000, (i % 1000) * int64(time.Millisecond)
 }
 
 func parseGatewayMessage(m *redisqueue.Message) (eventID string, eventTime, gatewayTime time.Time, data string, err error) {
@@ -322,7 +409,9 @@ func parseGatewayMessage(m *redisqueue.Message) (eventID string, eventTime, gate
 	}
 
 	ett := time.Unix(et, 0)
-	gtt := time.Unix((gt*int64(time.Millisecond))/int64(time.Second), ((gt % 1000) * int64(time.Millisecond)))
+
+	s, ns := unix(gt)
+	gtt := time.Unix(s, ns)
 
 	return eid, ett, gtt, d, nil
 }
