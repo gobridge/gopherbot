@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -74,6 +75,9 @@ func RunServer(cfg config.C) error {
 
 	handler := func(ctx workqueue.Context, m *slackevents.MessageEvent) (noAck bool, err error) {
 		ctx.Logger().Debug().
+			Bool("contains_real", strings.HasPrefix(m.Text, "<")).
+			Bool("contains_escaped", strings.HasPrefix(m.Text, `\u003c`)).
+			Str("text", m.Text).
 			Interface("json", m).
 			Msg("message received")
 
