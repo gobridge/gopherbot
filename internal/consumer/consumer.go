@@ -2,7 +2,6 @@
 package consumer
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"os"
@@ -16,11 +15,6 @@ import (
 	"github.com/theckman/gopher2/config"
 	"github.com/theckman/gopher2/workqueue"
 )
-
-type server struct {
-	l *zerolog.Logger
-	q workqueue.Q
-}
 
 // RunServer starts the gateway HTTP server.
 func RunServer(cfg config.C) error {
@@ -78,8 +72,8 @@ func RunServer(cfg config.C) error {
 		return fmt.Errorf("failed to build workqueue: %w", err)
 	}
 
-	handler := func(ctx context.Context, m *slackevents.MessageEvent) (noAck bool, err error) {
-		logger.Debug().
+	handler := func(ctx workqueue.Context, m *slackevents.MessageEvent) (noAck bool, err error) {
+		ctx.Logger().Debug().
 			Interface("json", m).
 			Msg("message received")
 

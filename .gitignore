@@ -13,3 +13,5 @@
 
 # binaries
 cmd/gateway/gateway
+cmd/consumer/consumer
+cmd/reacter/reacter

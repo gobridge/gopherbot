@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -55,12 +58,12 @@ const (
 // signals to the workqueue what to do with the item on failure with the noAck
 // bool. If there is an error, and noAck is true, another worker should pick up
 // the work eventually (assuming there are others).
-type MessageHandler func(ctx context.Context, m *slackevents.MessageEvent) (noAck bool, err error)
+type MessageHandler func(ctx Context, m *slackevents.MessageEvent) (noAck bool, err error)
 
 // TeamJoinHandler is the handler for team_join Slacfk events, used when a new
 // member joins the workspace. For info on noAck please see the comment for the
 // MessageHandler type.
-type TeamJoinHandler func(ctx context.Context, t *slack.TeamJoinEvent) (noAck bool, err error)
+type TeamJoinHandler func(ctx Context, t *slack.TeamJoinEvent) (noAck bool, err error)
 
 // Publisher is the interface for the workqueue publish behavior.
 type Publisher interface {
@@ -96,6 +99,9 @@ type Config struct {
 	// only a producer this can be left as its zero value.
 	VisibilityTimeout time.Duration
 
+	// SlackAccessToken is the Slack API access token
+	SlackAccessToken string
+
 	// RedisOptions are what they say on the tin.
 	RedisOptions *redis.Options
 
@@ -109,6 +115,8 @@ type I struct {
 	c *redisqueue.Consumer
 
 	l *zerolog.Logger
+
+	sc *slack.Client
 }
 
 // compile time check: does *I satisfy Q?
@@ -141,10 +149,13 @@ func New(cfg Config) (*I, error) {
 		return nil, fmt.Errorf("failed to prepare consumer: %w", err)
 	}
 
+	sc := slack.New(cfg.SlackAccessToken, slack.OptionHTTPClient(newHTTPClient()))
+
 	i := &I{
-		p: p,
-		c: c,
-		l: cfg.Logger,
+		p:  p,
+		c:  c,
+		sc: sc,
+		l:  cfg.Logger,
 	}
 
 	return i, nil
@@ -155,7 +166,7 @@ func (i *I) Run() {
 	i.c.Run()
 }
 
-// SHutdown wraps the redisqueue.Consumer.Shutdown method
+// Shutdown wraps the redisqueue.Consumer.Shutdown method
 func (i *I) Shutdown() {
 	i.c.Shutdown()
 }
@@ -191,16 +202,16 @@ func (i *I) RegisterPrivateMessageHandler(timeout time.Duration, fn MessageHandl
 }
 
 func (i *I) registerMessageHandler(stream string, timeout time.Duration, fn MessageHandler) {
-	i.c.RegisterWithLastID(stream, "$", messageHandlerFactory(i.l, timeout, fn))
+	i.c.RegisterWithLastID(stream, "$", messageHandlerFactory(i.l, i.sc, timeout, fn))
 }
 
 // RegisterTeamJoinHandler registers the handler for events related to people
 // joining the Slack workspace.
 func (i *I) RegisterTeamJoinHandler(timeout time.Duration, fn TeamJoinHandler) {
-	i.c.RegisterWithLastID(slackTeamJoin, "$", teamJoinHandlerFactory(i.l, timeout, fn))
+	i.c.RegisterWithLastID(slackTeamJoin, "$", teamJoinHandlerFactory(i.l, i.sc, timeout, fn))
 }
 
-func messageHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn MessageHandler) redisqueue.ConsumerFunc {
+func messageHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeout time.Duration, fn MessageHandler) redisqueue.ConsumerFunc {
 	flogger := baseLogger.With().Str("handler", "message").Logger()
 
 	return func(m *redisqueue.Message) error {
@@ -243,10 +254,12 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
+		wqctx := ctxer{Context: ctx, s: sc, l: &logger}
+
 		// used to calculate handler duration
 		bht := time.Now()
 
-		noAck, err := fn(ctx, sm)
+		noAck, err := fn(wqctx, sm)
 
 		// handler runtime duration
 		hrd := time.Since(bht)
@@ -276,7 +289,7 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn
 	}
 }
 
-func teamJoinHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, fn TeamJoinHandler) redisqueue.ConsumerFunc {
+func teamJoinHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeout time.Duration, fn TeamJoinHandler) redisqueue.ConsumerFunc {
 	flogger := baseLogger.With().Str("handler", "team_join").Logger()
 
 	return func(m *redisqueue.Message) error {
@@ -318,10 +331,12 @@ func teamJoinHandlerFactory(baseLogger *zerolog.Logger, timeout time.Duration, f
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
+		wqctx := ctxer{Context: ctx, s: sc, l: &logger}
+
 		// used to calculate handler duration
 		bht := time.Now()
 
-		noAck, err := fn(ctx, stj)
+		noAck, err := fn(wqctx, stj)
 
 		// handler runtime duration
 		hrd := time.Since(bht)
@@ -414,4 +429,27 @@ func parseGatewayMessage(m *redisqueue.Message) (eventID string, eventTime, gate
 	gtt := time.Unix(s, ns)
 
 	return eid, ett, gtt, d, nil
+}
+
+func newHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: newHTTPTransport(),
+	}
+}
+
+// newHTTPTransport returns an *http.Transport with some reasonable defaults.
+func newHTTPTransport() *http.Transport {
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       60 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 2 * time.Second,
+		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+	}
 }

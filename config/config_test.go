@@ -116,6 +116,7 @@ func TestLoadEnv(t *testing.T) {
 				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
 				_ = os.Setenv("SLACK_REQUEST_SECRET", "slack567")
 				_ = os.Setenv("SLACK_REQUEST_TOKEN", "slack42")
+				_ = os.Setenv("SLACK_BOT_ACCESS_TOKEN", "xxx123")
 			},
 			after: func() {
 				s := []string{
@@ -124,6 +125,7 @@ func TestLoadEnv(t *testing.T) {
 					"HEROKU_DYNO_ID", "HEROKU_SLUG_COMMIT", "SLACK_APP_ID",
 					"SLACK_TEAM_ID", "SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
 					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
+					"SLACK_BOT_ACCESS_TOKEN",
 				}
 
 				for _, v := range s {
@@ -148,12 +150,13 @@ func TestLoadEnv(t *testing.T) {
 					SkipVerify: true,
 				},
 				Slack: S{
-					AppID:         "slack123",
-					TeamID:        "xyz890",
-					ClientID:      "slack890",
-					ClientSecret:  "slack456",
-					RequestSecret: "slack567",
-					RequestToken:  "slack42",
+					AppID:          "slack123",
+					TeamID:         "xyz890",
+					ClientID:       "slack890",
+					ClientSecret:   "slack456",
+					RequestSecret:  "slack567",
+					RequestToken:   "slack42",
+					BotAccessToken: "xxx123",
 				},
 			},
 		},

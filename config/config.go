@@ -86,6 +86,10 @@ type S struct {
 	// ENV: SLACK_TEAM_ID
 	TeamID string
 
+	// BotAccessToken is the bot access token for API calls
+	// ENV: SLACK_BOT_ACCESS_TOKEN
+	BotAccessToken string
+
 	// ClientID is the Client ID
 	// Env: SLACK_CLIENT_ID
 	ClientID string
@@ -223,9 +227,11 @@ func LoadEnv() (C, error) {
 
 	c.Slack.ClientSecret = os.Getenv("SLACK_CLIENT_SECRET")
 	c.Slack.RequestSecret = os.Getenv("SLACK_REQUEST_SECRET")
+	c.Slack.BotAccessToken = os.Getenv("SLACK_BOT_ACCESS_TOKEN")
 
-	_ = os.Unsetenv("SLACK_CLIENT_SECRET")  // paranoia
-	_ = os.Unsetenv("SLACK_REQUEST_SECRET") // paranois
+	_ = os.Unsetenv("SLACK_CLIENT_SECRET")    // paranoia
+	_ = os.Unsetenv("SLACK_REQUEST_SECRET")   // paranoia
+	_ = os.Unsetenv("SLACK_BOT_ACCESS_TOKEN") // paranoia
 
 	return c, nil
 }
