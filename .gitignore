@@ -15,3 +15,6 @@
 cmd/gateway/gateway
 cmd/consumer/consumer
 cmd/reacter/reacter
+
+# dev area
+cmd/dev/

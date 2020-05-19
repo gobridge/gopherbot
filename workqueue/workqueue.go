@@ -99,14 +99,17 @@ type Config struct {
 	// only a producer this can be left as its zero value.
 	VisibilityTimeout time.Duration
 
-	// SlackAccessToken is the Slack API access token
-	SlackAccessToken string
-
 	// RedisOptions are what they say on the tin.
 	RedisOptions *redis.Options
 
 	// Logger is the logger
 	Logger *zerolog.Logger
+
+	// SlackClient is the client we give to handlers
+	SlackClient *slack.Client
+
+	// SlackUser is the slack user that this consumer is running as.
+	SlackUser *slack.User
 }
 
 // I is the workqueue struct, which satisfies Q.
@@ -116,7 +119,8 @@ type I struct {
 
 	l *zerolog.Logger
 
-	sc *slack.Client
+	sc   *slack.Client
+	self *slack.User
 }
 
 // compile time check: does *I satisfy Q?
@@ -149,13 +153,12 @@ func New(cfg Config) (*I, error) {
 		return nil, fmt.Errorf("failed to prepare consumer: %w", err)
 	}
 
-	sc := slack.New(cfg.SlackAccessToken, slack.OptionHTTPClient(newHTTPClient()))
-
 	i := &I{
-		p:  p,
-		c:  c,
-		sc: sc,
-		l:  cfg.Logger,
+		p:    p,
+		c:    c,
+		l:    cfg.Logger,
+		sc:   cfg.SlackClient,
+		self: cfg.SlackUser,
 	}
 
 	return i, nil
@@ -202,16 +205,16 @@ func (i *I) RegisterPrivateMessageHandler(timeout time.Duration, fn MessageHandl
 }
 
 func (i *I) registerMessageHandler(stream string, timeout time.Duration, fn MessageHandler) {
-	i.c.RegisterWithLastID(stream, "$", messageHandlerFactory(i.l, i.sc, timeout, fn))
+	i.c.RegisterWithLastID(stream, "$", messageHandlerFactory(i.l, i.sc, i.self, timeout, fn))
 }
 
 // RegisterTeamJoinHandler registers the handler for events related to people
 // joining the Slack workspace.
 func (i *I) RegisterTeamJoinHandler(timeout time.Duration, fn TeamJoinHandler) {
-	i.c.RegisterWithLastID(slackTeamJoin, "$", teamJoinHandlerFactory(i.l, i.sc, timeout, fn))
+	i.c.RegisterWithLastID(slackTeamJoin, "$", teamJoinHandlerFactory(i.l, i.sc, i.self, timeout, fn))
 }
 
-func messageHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeout time.Duration, fn MessageHandler) redisqueue.ConsumerFunc {
+func messageHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, botUser *slack.User, timeout time.Duration, fn MessageHandler) redisqueue.ConsumerFunc {
 	flogger := baseLogger.With().Str("handler", "message").Logger()
 
 	return func(m *redisqueue.Message) error {
@@ -241,8 +244,7 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeout
 
 		var sm *slackevents.MessageEvent
 
-		err = json.Unmarshal([]byte(d), &sm)
-		if err != nil {
+		if err = json.Unmarshal([]byte(d), &sm); err != nil {
 			logger.Error().
 				Err(err).
 				TimeDiff("duration", time.Now(), start).
@@ -254,7 +256,12 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeout
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
-		wqctx := ctxer{Context: ctx, s: sc, l: &logger}
+		wqctx := ctxer{
+			Context: ctx,
+			s:       sc,
+			l:       &logger,
+			u:       botUser,
+		}
 
 		// used to calculate handler duration
 		bht := time.Now()
@@ -289,7 +296,7 @@ func messageHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeout
 	}
 }
 
-func teamJoinHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeout time.Duration, fn TeamJoinHandler) redisqueue.ConsumerFunc {
+func teamJoinHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, botUser *slack.User, timeout time.Duration, fn TeamJoinHandler) redisqueue.ConsumerFunc {
 	flogger := baseLogger.With().Str("handler", "team_join").Logger()
 
 	return func(m *redisqueue.Message) error {
@@ -319,7 +326,7 @@ func teamJoinHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeou
 
 		var stj *slack.TeamJoinEvent
 
-		if err := json.Unmarshal([]byte(d), &stj); err != nil {
+		if err = json.Unmarshal([]byte(d), &stj); err != nil {
 			logger.Error().
 				Err(err).
 				TimeDiff("duration", time.Now(), start).
@@ -331,7 +338,12 @@ func teamJoinHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, timeou
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
-		wqctx := ctxer{Context: ctx, s: sc, l: &logger}
+		wqctx := ctxer{
+			Context: ctx,
+			s:       sc,
+			l:       &logger,
+			u:       botUser,
+		}
 
 		// used to calculate handler duration
 		bht := time.Now()
