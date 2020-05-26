@@ -102,30 +102,30 @@ func TestLoadEnv(t *testing.T) {
 			before: func() {
 				_ = os.Setenv("PORT", "1234")
 				_ = os.Setenv("REDIS_URL", "rediss://u:1234@redis.example.org:4321")
-				_ = os.Setenv("REDIS_INSECURE", "1")
-				_ = os.Setenv("REDIS_SKIPVERIFY", "1")
+				_ = os.Setenv("GOPHER_REDIS_INSECURE", "1")
+				_ = os.Setenv("GOPHER_REDIS_SKIPVERIFY", "1")
 				_ = os.Setenv("ENV", "testing")
-				_ = os.Setenv("LOG_LEVEL", "trace")
+				_ = os.Setenv("GOPHER_LOG_LEVEL", "trace")
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
 				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
 				_ = os.Setenv("HEROKU_SLUG_COMMIT", "deadbeefcafe")
-				_ = os.Setenv("SLACK_APP_ID", "slack123")
-				_ = os.Setenv("SLACK_TEAM_ID", "xyz890")
-				_ = os.Setenv("SLACK_CLIENT_ID", "slack890")
-				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
-				_ = os.Setenv("SLACK_REQUEST_SECRET", "slack567")
-				_ = os.Setenv("SLACK_REQUEST_TOKEN", "slack42")
-				_ = os.Setenv("SLACK_BOT_ACCESS_TOKEN", "xxx123")
+				_ = os.Setenv("GOPHER_SLACK_APP_ID", "slack123")
+				_ = os.Setenv("GOPHER_SLACK_TEAM_ID", "xyz890")
+				_ = os.Setenv("GOPHER_SLACK_CLIENT_ID", "slack890")
+				_ = os.Setenv("GOPHER_SLACK_CLIENT_SECRET", "slack456")
+				_ = os.Setenv("GOPHER_SLACK_REQUEST_SECRET", "slack567")
+				_ = os.Setenv("GOPHER_SLACK_REQUEST_TOKEN", "slack42")
+				_ = os.Setenv("GOPHER_SLACK_BOT_ACCESS_TOKEN", "xxx123")
 			},
 			after: func() {
 				s := []string{
-					"PORT", "REDIS_URL", "REDIS_INSECURE", "REDIS_SKIPVERIFY",
-					"ENV", "LOG_LEVEL", "HEROKU_APP_ID", "HEROKU_APP_NAME",
-					"HEROKU_DYNO_ID", "HEROKU_SLUG_COMMIT", "SLACK_APP_ID",
-					"SLACK_TEAM_ID", "SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
-					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
-					"SLACK_BOT_ACCESS_TOKEN",
+					"PORT", "REDIS_URL", "GOPHER_REDIS_INSECURE", "GOPHER_REDIS_SKIPVERIFY",
+					"ENV", "GOPHER_LOG_LEVEL", "HEROKU_APP_ID", "HEROKU_APP_NAME",
+					"HEROKU_DYNO_ID", "HEROKU_SLUG_COMMIT", "GOPHER_SLACK_APP_ID",
+					"GOPHER_SLACK_TEAM_ID", "GOPHER_SLACK_CLIENT_ID", "GOPHER_SLACK_CLIENT_SECRET",
+					"GOPHER_SLACK_REQUEST_SECRET", "GOPHER_SLACK_REQUEST_TOKEN",
+					"GOPHER_SLACK_BOT_ACCESS_TOKEN",
 				}
 
 				for _, v := range s {
@@ -165,25 +165,25 @@ func TestLoadEnv(t *testing.T) {
 			before: func() {
 				_ = os.Setenv("PORT", "1234")
 				_ = os.Setenv("REDIS_URL", "redis://u@redis.example.org:4320")
-				_ = os.Setenv("REDIS_INSECURE", "2")
-				_ = os.Setenv("REDIS_SKIPVERIFY", "2")
+				_ = os.Setenv("GOPHER_REDIS_INSECURE", "2")
+				_ = os.Setenv("GOPHER_REDIS_SKIPVERIFY", "2")
 				_ = os.Setenv("ENV", "testing")
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
 				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
-				_ = os.Setenv("SLACK_APP_ID", "slack123")
-				_ = os.Setenv("SLACK_CLIENT_ID", "slack890")
-				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
-				_ = os.Setenv("SLACK_REQUEST_SECRET", "slack567")
-				_ = os.Setenv("SLACK_REQUEST_TOKEN", "slack42")
+				_ = os.Setenv("GOPHER_SLACK_APP_ID", "slack123")
+				_ = os.Setenv("GOPHER_SLACK_CLIENT_ID", "slack890")
+				_ = os.Setenv("GOPHER_SLACK_CLIENT_SECRET", "slack456")
+				_ = os.Setenv("GOPHER_SLACK_REQUEST_SECRET", "slack567")
+				_ = os.Setenv("GOPHER_SLACK_REQUEST_TOKEN", "slack42")
 			},
 			after: func() {
 				s := []string{
-					"PORT", "REDIS_URL", "REDIS_INSECURE", "REDIS_SKIPVERIFY",
+					"PORT", "REDIS_URL", "GOPHER_REDIS_INSECURE", "GOPHER_REDIS_SKIPVERIFY",
 					"ENV", "HEROKU_APP_ID", "HEROKU_APP_NAME",
-					"HEROKU_DYNO_ID", "SLACK_APP_ID",
-					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
-					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
+					"HEROKU_DYNO_ID", "GOPHER_SLACK_APP_ID",
+					"GOPHER_SLACK_CLIENT_ID", "GOPHER_SLACK_CLIENT_SECRET",
+					"GOPHER_SLACK_REQUEST_SECRET", "GOPHER_SLACK_REQUEST_TOKEN",
 				}
 
 				for _, v := range s {
@@ -221,20 +221,20 @@ func TestLoadEnv(t *testing.T) {
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
 				_ = os.Setenv("HEROKU_DYNO_ID", "def890")
-				_ = os.Setenv("SLACK_APP_ID", "slack123")
-				_ = os.Setenv("SLACK_TEAM_ID", "xyz890")
-				_ = os.Setenv("SLACK_CLIENT_ID", "slack890")
-				_ = os.Setenv("SLACK_CLIENT_SECRET", "slack456")
-				_ = os.Setenv("SLACK_REQUEST_SECRET", "slack567")
-				_ = os.Setenv("SLACK_REQUEST_TOKEN", "slack42")
+				_ = os.Setenv("GOPHER_SLACK_APP_ID", "slack123")
+				_ = os.Setenv("GOPHER_SLACK_TEAM_ID", "xyz890")
+				_ = os.Setenv("GOPHER_SLACK_CLIENT_ID", "slack890")
+				_ = os.Setenv("GOPHER_SLACK_CLIENT_SECRET", "slack456")
+				_ = os.Setenv("GOPHER_SLACK_REQUEST_SECRET", "slack567")
+				_ = os.Setenv("GOPHER_SLACK_REQUEST_TOKEN", "slack42")
 			},
 			after: func() {
 				s := []string{
 					"PORT", "REDIS_URL", "ENV",
 					"HEROKU_APP_ID", "HEROKU_APP_NAME",
-					"HEROKU_DYNO_ID", "SLACK_APP_ID", "SLACK_TEAM_ID",
-					"SLACK_CLIENT_ID", "SLACK_CLIENT_SECRET",
-					"SLACK_REQUEST_SECRET", "SLACK_REQUEST_TOKEN",
+					"HEROKU_DYNO_ID", "GOPHER_SLACK_APP_ID", "GOPHER_SLACK_TEAM_ID",
+					"GOPHER_SLACK_CLIENT_ID", "GOPHER_SLACK_CLIENT_SECRET",
+					"GOPHER_SLACK_REQUEST_SECRET", "GOPHER_SLACK_REQUEST_TOKEN",
 				}
 
 				for _, v := range s {
@@ -335,7 +335,7 @@ func TestLoadEnv(t *testing.T) {
 		{
 			name: "bad_LOG_LEVEL",
 			before: func() {
-				_ = os.Setenv("LOG_LEVEL", "testfail")
+				_ = os.Setenv("GOPHER_LOG_LEVEL", "testfail")
 				_ = os.Setenv("ENV", "testing")
 				_ = os.Setenv("HEROKU_APP_ID", "abc123")
 				_ = os.Setenv("HEROKU_APP_NAME", "testApp")
@@ -343,7 +343,7 @@ func TestLoadEnv(t *testing.T) {
 			},
 			after: func() {
 				s := []string{
-					"LOG_LEVEL", "REDIS_URL", "ENV",
+					"GOPHER_LOG_LEVEL", "REDIS_URL", "ENV",
 					"HEROKU_APP_ID", "HEROKU_APP_NAME",
 					"HEROKU_DYNO_ID",
 				}
@@ -352,7 +352,7 @@ func TestLoadEnv(t *testing.T) {
 					_ = os.Unsetenv(v)
 				}
 			},
-			err: `failed to parse LOG_LEVEL: Unknown Level String: 'testfail', defaulting to NoLevel`,
+			err: `failed to parse GOPHER_LOG_LEVEL: Unknown Level String: 'testfail', defaulting to NoLevel`,
 		},
 	}
 

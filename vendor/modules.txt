@@ -43,7 +43,7 @@ github.com/mgutz/ansi
 ## explicit
 # github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
 github.com/pkg/errors
-# github.com/robinjoseph08/redisqueue v1.0.1 => github.com/theckman/redisqueue v1.0.2-0.20200509175353-f76a50b27946
+# github.com/robinjoseph08/redisqueue v1.1.0
 ## explicit
 github.com/robinjoseph08/redisqueue
 # github.com/rs/zerolog v1.18.0
@@ -82,4 +82,3 @@ gopkg.in/kyokomi/emoji.v1
 # gopkg.in/yaml.v2 v2.2.4
 ## explicit
 gopkg.in/yaml.v2
-# github.com/robinjoseph08/redisqueue => github.com/theckman/redisqueue v1.0.2-0.20200509175353-f76a50b27946

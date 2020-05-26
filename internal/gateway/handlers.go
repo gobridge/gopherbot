@@ -8,17 +8,22 @@ import (
 	"net/http"
 
 	"github.com/rs/zerolog"
-	"github.com/theckman/gopher2/workqueue"
+	"github.com/gobridge/gopherbot/workqueue"
 	"github.com/valyala/fastjson"
 )
 
 const maxBodySize = 2 * 1024 * 1024 // 2 MB
 
-func (s *server) handleNotFound(w http.ResponseWriter, r *http.Request) {
+type handler struct {
+	l *zerolog.Logger
+	q workqueue.Q
+}
+
+func (s *handler) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
-func (s *server) handleRUOK(w http.ResponseWriter, r *http.Request) {
+func (s *handler) handleRUOK(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, "imok")
 }
 
@@ -130,7 +135,7 @@ func wqEventType(event *fastjson.Value) (workqueue.Event, error) {
 	}
 }
 
-func (s *server) handleSlackEvent(w http.ResponseWriter, r *http.Request) {
+func (s *handler) handleSlackEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	lc := s.l.With().Str("context", "event_handler")
 

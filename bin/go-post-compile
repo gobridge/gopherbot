@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for prog in gateway consumer; do
+for prog in gateway consumer bgtasks; do
     echo "==> creating ./cmd/${prog}/bin"
     mkdir -p ./cmd/${prog}/bin
 

@@ -3,13 +3,16 @@
 package config
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/rs/zerolog"
 )
 
@@ -189,8 +192,8 @@ func LoadEnv() (C, error) {
 	}
 
 	if r := os.Getenv("REDIS_URL"); len(r) > 0 {
-		c.Redis.Insecure = os.Getenv("REDIS_INSECURE") == "1"
-		c.Redis.SkipVerify = os.Getenv("REDIS_SKIPVERIFY") == "1"
+		c.Redis.Insecure = os.Getenv("GOPHER_REDIS_INSECURE") == "1"
+		c.Redis.SkipVerify = os.Getenv("GOPHER_REDIS_SKIPVERIFY") == "1"
 
 		a, u, p, err := secureRedisCredentials(r, c.Redis.Insecure)
 		if err != nil {
@@ -202,14 +205,14 @@ func LoadEnv() (C, error) {
 		c.Redis.Password = p
 	}
 
-	ll := os.Getenv("LOG_LEVEL")
+	ll := os.Getenv("GOPHER_LOG_LEVEL")
 	if len(ll) == 0 {
 		ll = "info"
 	}
 
 	l, err := zerolog.ParseLevel(ll)
 	if err != nil {
-		return C{}, fmt.Errorf("failed to parse LOG_LEVEL: %w", err)
+		return C{}, fmt.Errorf("failed to parse GOPHER_LOG_LEVEL: %w", err)
 	}
 
 	c.LogLevel = l
@@ -220,18 +223,54 @@ func LoadEnv() (C, error) {
 	c.Heroku.DynoID = os.Getenv("HEROKU_DYNO_ID")
 	c.Heroku.Commit = os.Getenv("HEROKU_SLUG_COMMIT")
 
-	c.Slack.AppID = os.Getenv("SLACK_APP_ID")
-	c.Slack.TeamID = os.Getenv("SLACK_TEAM_ID")
-	c.Slack.ClientID = os.Getenv("SLACK_CLIENT_ID")
-	c.Slack.RequestToken = os.Getenv("SLACK_REQUEST_TOKEN")
+	c.Slack.AppID = os.Getenv("GOPHER_SLACK_APP_ID")
+	c.Slack.TeamID = os.Getenv("GOPHER_SLACK_TEAM_ID")
+	c.Slack.ClientID = os.Getenv("GOPHER_SLACK_CLIENT_ID")
+	c.Slack.RequestToken = os.Getenv("GOPHER_SLACK_REQUEST_TOKEN")
 
-	c.Slack.ClientSecret = os.Getenv("SLACK_CLIENT_SECRET")
-	c.Slack.RequestSecret = os.Getenv("SLACK_REQUEST_SECRET")
-	c.Slack.BotAccessToken = os.Getenv("SLACK_BOT_ACCESS_TOKEN")
+	c.Slack.ClientSecret = os.Getenv("GOPHER_SLACK_CLIENT_SECRET")
+	c.Slack.RequestSecret = os.Getenv("GOPHER_SLACK_REQUEST_SECRET")
+	c.Slack.BotAccessToken = os.Getenv("GOPHER_SLACK_BOT_ACCESS_TOKEN")
 
-	_ = os.Unsetenv("SLACK_CLIENT_SECRET")    // paranoia
-	_ = os.Unsetenv("SLACK_REQUEST_SECRET")   // paranoia
-	_ = os.Unsetenv("SLACK_BOT_ACCESS_TOKEN") // paranoia
+	_ = os.Unsetenv("GOPHER_SLACK_CLIENT_SECRET")    // paranoia
+	_ = os.Unsetenv("GOPHER_SLACK_REQUEST_SECRET")   // paranoia
+	_ = os.Unsetenv("GOPHER_SLACK_BOT_ACCESS_TOKEN") // paranoia
 
 	return c, nil
+}
+
+// DefaultLogger returns a zerolog.Logger using settings from our config struct.
+func DefaultLogger(cfg C) zerolog.Logger {
+	// set up zerolog
+	zerolog.TimestampFieldName = "timestamp"
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
+	zerolog.SetGlobalLevel(cfg.LogLevel)
+
+	// set up logging
+	return zerolog.New(os.Stdout).
+		With().Timestamp().Logger()
+}
+
+// DefaultRedis returns a default Redis config from our own config struct.
+func DefaultRedis(cfg C) *redis.Options {
+	r := &redis.Options{
+		Network:      "tcp",
+		Addr:         cfg.Redis.Addr,
+		Password:     cfg.Redis.Password,
+		DialTimeout:  2 * time.Second,
+		ReadTimeout:  2 * time.Second,
+		WriteTimeout: 2 * time.Second,
+		PoolSize:     20,
+		MinIdleConns: 5,
+		PoolTimeout:  2 * time.Second,
+	}
+
+	// if Redis is TLS secured
+	if !cfg.Redis.Insecure {
+		r.TLSConfig = &tls.Config{
+			InsecureSkipVerify: cfg.Redis.SkipVerify,
+		} // #nosec G402 -- Heroku Redis has an untrusted cert
+	}
+
+	return r
 }

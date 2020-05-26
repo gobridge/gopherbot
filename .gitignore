@@ -14,7 +14,7 @@
 # binaries
 cmd/gateway/gateway
 cmd/consumer/consumer
-cmd/reacter/reacter
+cmd/bgtasks/bgtasks
 
 # dev area
 cmd/dev/

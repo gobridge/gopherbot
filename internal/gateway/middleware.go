@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"github.com/theckman/gopher2/signing"
+	"github.com/gobridge/gopherbot/signing"
 	"github.com/valyala/fastjson"
 )
 

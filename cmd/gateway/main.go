@@ -5,17 +5,21 @@ import (
 
 	_ "github.com/heroku/x/hmetrics/onload"
 
-	"github.com/theckman/gopher2/config"
-	"github.com/theckman/gopher2/internal/gateway"
+	"github.com/gobridge/gopherbot/config"
+	"github.com/gobridge/gopherbot/internal/gateway"
 )
 
 func main() {
-	cfg, err := config.LoadEnv()
+	c, err := config.LoadEnv()
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	if err := gateway.RunServer(cfg); err != nil {
-		log.Fatalf("failed to run new gateway server: %v", err.Error())
+	l := config.DefaultLogger(c)
+
+	if err := gateway.RunServer(c, l); err != nil {
+		l.Fatal().
+			Err(err).
+			Msg("failed to run gateway server")
 	}
 }

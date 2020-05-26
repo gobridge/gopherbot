@@ -1,0 +1,66 @@
+{
+  "id": "go~master~I00765b6019c07a6ff03022625b556c2b9ba87c09",
+  "project": "go",
+  "branch": "master",
+  "hashtags": [],
+  "change_id": "I00765b6019c07a6ff03022625b556c2b9ba87c09",
+  "subject": "time: simplify Duration.String example",
+  "status": "MERGED",
+  "created": "2020-05-22 00:54:56.000000000",
+  "updated": "2020-05-23 00:20:45.000000000",
+  "submitted": "2020-05-22 11:28:55.000000000",
+  "submitter": {
+    "_account_id": 5056
+  },
+  "insertions": 5,
+  "deletions": 4,
+  "total_comment_count": 1,
+  "unresolved_comment_count": 1,
+  "has_review_started": true,
+  "submission_id": "234893",
+  "_number": 234893,
+  "owner": {
+    "_account_id": 5056
+  },
+  "current_revision": "9acdc705e7d53a59b8418dd0beb570db35f7a744",
+  "revisions": {
+    "9acdc705e7d53a59b8418dd0beb570db35f7a744": {
+      "kind": "REWORK",
+      "_number": 3,
+      "created": "2020-05-22 11:28:55.000000000",
+      "uploader": {
+        "_account_id": 5056
+      },
+      "ref": "refs/changes/93/234893/3",
+      "fetch": {
+        "http": {
+          "url": "https://go.googlesource.com/go",
+          "ref": "refs/changes/93/234893/3"
+        }
+      },
+      "commit": {
+        "parents": [
+          {
+            "commit": "ea2de3346ff8714c9fae95c2a3d686ec07d47ca8",
+            "subject": "runtime: detect and report zombie slots during sweeping"
+          }
+        ],
+        "author": {
+          "name": "Russ Cox",
+          "email": "rsc@golang.org",
+          "date": "2020-05-22 00:53:45.000000000",
+          "tz": -240
+        },
+        "committer": {
+          "name": "Russ Cox",
+          "email": "rsc@golang.org",
+          "date": "2020-05-22 11:28:55.000000000",
+          "tz": 0
+        },
+        "subject": "time: simplify Duration.String example",
+        "message": "time: simplify Duration.String example\n\nThe existing example is needlessly complex.\nYou have to know that t.Sub returns a Duration\nand also have to mentally subtract the two times\nto understand what duration should be printed.\n\nRewrite to focus on just the Duration.String operation.\n\nChange-Id: I00765b6019c07a6ff03022625b556c2b9ba87c09\nReviewed-on: https://go-review.googlesource.com/c/go/+/234893\nRun-TryBot: Russ Cox <rsc@golang.org>\nTryBot-Result: Gobot Gobot <gobot@golang.org>\nReviewed-by: Ian Lance Taylor <iant@golang.org>\nReviewed-by: Brad Fitzpatrick <bradfitz@golang.org>\n"
+      }
+    }
+  },
+  "requirements": []
+}
