@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/slack-go/slack"
 	"github.com/gobridge/gopherbot/handler"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/slack-go/slack"
 )
 
 func injectTeamJoinHandlers(t *handler.TeamJoinActions) {
@@ -82,7 +82,7 @@ func welcomeMessage(channels []recommendedChannel, cs workqueue.ChannelSvc, self
 // constant has become a bit ridiculous.
 //
 // maybe it would be easier to read if it were a slice of strings?
-const teamJoinWelcomeMessageFormat = `Welcome to the Gophers Slack Workspace! This space is meant to connect gophers from all over the world in a central place. I am the community chat bot, and do have a few functions available to help you during your time here. :)
+const teamJoinWelcomeMessageFormat = `Welcome to the Gophers Slack Workspace! This space is meant to connect gophers from all over the world in a central place. I am the community chat bot, and do have a few functions available to help you during your time here. :simple_smile:
 
 Before getting started, we ask that you take a look at the rules all members are expected to follow: <http://coc.golangbridge.org>. If you ever need help from our workspace's community moderators or administrators, please reach out in <#%s>.
 
@@ -109,4 +109,4 @@ If you are interested in a free copy of the Go Web Programming book by Sau Sheon
 
 In case you want to customize your profile picture, you can use <https://gopherize.me/> to create a custom gopher.
 
-Now, enjoy the community and have fun!`
+Now, enjoy the community and have fun! :gopher:`

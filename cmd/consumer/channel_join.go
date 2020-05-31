@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/slack-go/slack"
 	"github.com/gobridge/gopherbot/handler"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/slack-go/slack"
 )
 
 func injectChannelJoinHandlers(c *handler.ChannelJoinActions) {
@@ -43,7 +43,7 @@ I am the community chat bot and have some resources available for you to get sta
 
 You can also ask me for all the commands I support: <@%s> help
 
-We hope you have fun learning Go!`
+We hope you have fun learning Go! :gopherdance:`
 
 func newbiesWelcomeMessage(selfID string) string {
 	return fmt.Sprintf(newbiesWelcomeMessageFormat, selfID, selfID)
