@@ -1,37 +1,25 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/gobridge/gopherbot/handler"
 	"github.com/gobridge/gopherbot/workqueue"
-	"github.com/slack-go/slack"
 )
 
 func injectChannelJoinHandlers(c *handler.ChannelJoinActions) {
 	c.Handle("newbie", "C02A8LZKT",
 		func(ctx workqueue.Context, cj handler.ChannelJoiner, r handler.Responder) error {
 			msg := newbiesWelcomeMessage(ctx.Self().ID)
-			msg = "Would weclome <@" + cj.UserID() + "> to newbies channel\n\n" + msg
 
 			ctx.Logger().Debug().
 				Str("channel_id", cj.ChannelID()).
 				Str("user_id", cj.UserID()).
 				Time("joined_time", ctx.Meta().Time).
 				Int("msg_len", len(msg)).
-				Msg("welcoming user to newbies")
+				Msg("welcoming user to newbies channel")
 
-			opts := []slack.MsgOption{
-				slack.MsgOptionDisableLinkUnfurl(),
-				slack.MsgOptionDisableMediaUnfurl(),
-				slack.MsgOptionText(msg, false),
-			}
-
-			// TODO(theckman): make this an ephemeral message back to the channel
-			// sending to #gopherdev
-			_, _, _, err := ctx.Slack().SendMessageContext(context.TODO(), "C013XC5SU21", opts...)
-			return err
+			return r.RespondEphemeral(ctx, msg)
 		},
 	)
 }

@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/gobridge/gopherbot/handler"
 	"github.com/gobridge/gopherbot/workqueue"
-	"github.com/slack-go/slack"
 )
 
 func injectTeamJoinHandlers(t *handler.TeamJoinActions) {
@@ -18,31 +16,18 @@ func injectTeamJoinHandlers(t *handler.TeamJoinActions) {
 				return fmt.Errorf("failed to generate welcome message: %w", err)
 			}
 
-			msg := "Would weclome <@" + tj.User().ID + ">:\n\n" + wmsg
-
 			ctx.Logger().Debug().
 				Str("user_id", tj.User().ID).
 				Str("user_email", tj.User().Profile.Email).
 				Time("joined_time", ctx.Meta().Time).
-				Int("msg_len", len(msg)).
+				Int("msg_len", len(wmsg)).
 				Msg("welcoming user")
 
-			opts := []slack.MsgOption{
-				slack.MsgOptionDisableLinkUnfurl(),
-				slack.MsgOptionDisableMediaUnfurl(),
-				slack.MsgOptionText(msg, false),
-			}
-
-			// TODO(theckman): have this DM the new member and not message #gopherdev
-			_, _, _, err = ctx.Slack().SendMessageContext(context.TODO(), "C013XC5SU21", opts...)
-			return err
-
-			// return r.RespondPrivate(ctx, wm)
+			return r.RespondDM(ctx, wmsg)
 		},
 	)
 }
 
-// TODO(theckman): figure out a better way to handle these
 const (
 	bkennedyID  = "U029RQSE8"
 	sausheongID = "U03QZHXD8"

@@ -171,13 +171,11 @@ func (c *Client) upload(ctx context.Context, body io.Reader) (link string, err e
 
 // MessageMatchFn satisfies handler.MessageMatchFn
 func (c *Client) MessageMatchFn(shadowMode bool, m handler.Messenger) bool {
-	// TODO(theckman): remove guard eventually
-	if m.ChannelID() != "C013XC5SU21" { // #gopherdev
-		return false
-	}
-
 	// channel is blacklisted
 	if _, ok := c.blacklist[m.ChannelID()]; ok {
+		c.logger.Debug().
+			Str("reason", "channel not permitted").
+			Msg("playground match skipped")
 		return false
 	}
 
@@ -189,7 +187,7 @@ func (c *Client) MessageMatchFn(shadowMode bool, m handler.Messenger) bool {
 
 	if shadowMode {
 		c.logger.Debug().
-			Bool("shadow_mode", true).
+			Str("reason", "shadow mode").
 			Msg("playground match skipped")
 
 		return false
