@@ -15,17 +15,19 @@ import (
 	"github.com/gobridge/gopherbot/handler"
 	"github.com/gobridge/gopherbot/mparser"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/rs/zerolog"
 )
 
 // Client is the Go Playground client.
 type Client struct {
 	httpc     *http.Client
+	logger    zerolog.Logger
 	blacklist map[string]struct{}
 }
 
 // New takes an HTTP client and returns a Playground Client. If httpc is nil
 // this program will probably panic at some point.
-func New(httpc *http.Client, channelBlacklist []string) *Client {
+func New(httpc *http.Client, logger zerolog.Logger, channelBlacklist []string) *Client {
 	m := make(map[string]struct{}, len(channelBlacklist))
 
 	for _, cid := range channelBlacklist {
@@ -34,6 +36,7 @@ func New(httpc *http.Client, channelBlacklist []string) *Client {
 
 	return &Client{
 		httpc:     httpc,
+		logger:    logger,
 		blacklist: m,
 	}
 }
@@ -166,8 +169,8 @@ func (c *Client) upload(ctx context.Context, body io.Reader) (link string, err e
 	return "https://play.golang.org/p/" + string(id), nil
 }
 
-// MatchFn satisfies handler.MatchFn
-func (c *Client) MatchFn(m handler.Messenger) bool {
+// MessageMatchFn satisfies handler.MessageMatchFn
+func (c *Client) MessageMatchFn(shadowMode bool, m handler.Messenger) bool {
 	// TODO(theckman): remove guard eventually
 	if m.ChannelID() != "C013XC5SU21" { // #gopherdev
 		return false
@@ -181,6 +184,14 @@ func (c *Client) MatchFn(m handler.Messenger) bool {
 	rt := m.RawText()
 
 	if strings.Contains(rt, "nolink") || (len(m.Files()) == 0 && strings.Count(rt, "\n") < 10) {
+		return false
+	}
+
+	if shadowMode {
+		c.logger.Debug().
+			Bool("shadow_mode", true).
+			Msg("playground match skipped")
+
 		return false
 	}
 

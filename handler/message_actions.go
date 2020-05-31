@@ -8,19 +8,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog"
-	"github.com/slack-go/slack/slackevents"
 	"github.com/gobridge/gopherbot/mparser"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/rs/zerolog"
+	"github.com/slack-go/slack/slackevents"
 )
 
 // MessageActionFn represents an interactivity action where it's not a simple response,
 // and instead needs a function execution.
 type MessageActionFn func(ctx workqueue.Context, m Messenger, r Responder) error
 
-// MessageMatchFn is a function for consumers to provider their own handler match. If
-// the MessageMatchFn returns true, the handler matches.
-type MessageMatchFn func(m Messenger) bool
+// MessageMatchFn is a function for consumers to provider their own handler
+// match. If the MessageMatchFn returns true, the handler matches. The
+// shadowMode argument is true if this is a pre-production bot, meaning we
+// should probably not react / respond.
+type MessageMatchFn func(shadowMode bool, m Messenger) bool
 
 type reactiveAction struct {
 	description       string
@@ -278,7 +280,7 @@ func (m *MessageActions) Match(message Message) []MessageAction {
 	}
 
 	for _, v := range m.dynamic {
-		if v.matchfn(message) {
+		if v.matchfn(m.shadowMode, message) {
 			a := MessageAction{
 				Description: v.description,
 				fn:          v.fn,

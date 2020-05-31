@@ -167,8 +167,9 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 	injectMessageReactions(ma)
 	injectMessageResponsePrefix(ma)
 
-	pg := playground.New(newHTTPClient(), playgroundChannelBlacklist)
-	ma.HandleDynamic(pg.MatchFn, pg.Handler)
+	lp := logger.With().Str("context", "playground")
+	pg := playground.New(newHTTPClient(), lp.Logger(), playgroundChannelBlacklist)
+	ma.HandleDynamic(pg.MessageMatchFn, pg.Handler)
 
 	injectTeamJoinHandlers(tja)
 	injectChannelJoinHandlers(cja)
