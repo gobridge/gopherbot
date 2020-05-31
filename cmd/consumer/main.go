@@ -31,6 +31,7 @@ var playgroundChannelBlacklist = []string{
 	"C4U9J9QBT", // #admin-help
 	"C029RQSEG", // #random
 	"G1L7RN06B", // admin private channel
+	"G207C8R1R", // gobridge ops chanel
 	"GB1KBRGKA", // modnar (private random channel)
 }
 
