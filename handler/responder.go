@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/slack-go/slack"
 	"github.com/gobridge/gopherbot/mparser"
+	"github.com/slack-go/slack"
 )
 
 // Responder is the interface to describe the functionality used by handlers to
@@ -74,7 +74,7 @@ func (r response) Respond(ctx context.Context, msg string, attachments ...slack.
 }
 
 func (r response) RespondDM(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, false, true, r.m.userID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, false, false, r.m.userID, r.m.threadTS, msg, attachments...)
 }
 
 func (r response) RespondUnfurled(ctx context.Context, msg string, attachments ...slack.Attachment) error {
