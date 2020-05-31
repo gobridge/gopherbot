@@ -33,6 +33,7 @@ func injectTeamJoinHandlers(t *handler.TeamJoinActions) {
 				slack.MsgOptionText(msg, false),
 			}
 
+			// TODO(theckman): have this DM the new member and not message #gopherdev
 			_, _, _, err = ctx.Slack().SendMessageContext(context.TODO(), "C013XC5SU21", opts...)
 			return err
 

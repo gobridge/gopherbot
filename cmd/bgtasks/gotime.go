@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/gobridge/gopherbot/internal/poller/gotime"
 	"github.com/rs/zerolog"
 	"github.com/slack-go/slack"
-	"github.com/gobridge/gopherbot/internal/poller/gotime"
 )
 
 const (
@@ -21,8 +21,16 @@ const (
 
 const goTimeMsg = ":tada: GoTimeFM is now live :tada:"
 
-func goTimeNotifyFactory(c *slack.Client, channelID string) gotime.NotifyFunc {
+func goTimeNotifyFactory(logger zerolog.Logger, c *slack.Client, channelID string, shadowMode bool) gotime.NotifyFunc {
 	return func(ctx context.Context) error {
+		if shadowMode {
+			logger.Info().
+				Bool("shadow_mode", true).
+				Msg("would announce it's GoTime!")
+
+			return nil
+		}
+
 		opts := []slack.MsgOption{
 			slack.MsgOptionText(goTimeMsg, false),
 		}
@@ -46,7 +54,8 @@ func setUpGoTime(ctx context.Context, shadowMode bool, logger zerolog.Logger, sc
 		cid = gotimeGopherdevChannelID
 	}
 
-	gp, err := gotime.New(gs, newHTTPClient(), logger, 30*time.Second, goTimeNotifyFactory(sc, cid))
+	ln := logger.With().Str("context", "gotime_notifier").Logger()
+	gp, err := gotime.New(gs, newHTTPClient(), logger, 30*time.Second, goTimeNotifyFactory(ln, sc, cid, shadowMode))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new gotime poller: %w", err)
 	}

@@ -81,7 +81,7 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 	sc := slack.New(cfg.Slack.BotAccessToken, slack.OptionHTTPClient(newHTTPClient()))
 
 	var shadowMode bool
-	if cfg.Env != "production" {
+	if cfg.Env != config.Production {
 		shadowMode = true
 	}
 

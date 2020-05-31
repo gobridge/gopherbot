@@ -137,7 +137,7 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 	}
 
 	var shadowMode bool
-	if cfg.Env != "production" {
+	if cfg.Env != config.Production {
 		shadowMode = true
 	}
 

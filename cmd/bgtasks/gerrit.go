@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/gobridge/gopherbot/internal/poller/gerrit"
 	"github.com/rs/zerolog"
 	"github.com/slack-go/slack"
-	"github.com/gobridge/gopherbot/internal/poller/gerrit"
 )
 
 const (
@@ -19,8 +19,16 @@ const (
 	gerritGolangclsChannelID = gerritGopherdevChannelID
 )
 
-func gerritNotifyFactory(c *slack.Client, channelID string) gerrit.NotifyFunc {
+func gerritNotifyFactory(logger zerolog.Logger, c *slack.Client, channelID string, shadowMode bool) gerrit.NotifyFunc {
 	return func(ctx context.Context, cl gerrit.CL) error {
+		if shadowMode {
+			logger.Info().
+				Bool("shadow_mode", true).
+				Msg("would announce merged CL")
+
+			return nil
+		}
+
 		msg := fmt.Sprintf("[%d] %s: %s", cl.Number, cl.Message(), cl.Link())
 
 		a := slack.Attachment{
@@ -98,7 +106,8 @@ func setUpGerrit(ctx context.Context, shadowMode bool, logger zerolog.Logger, sc
 		cid = gerritGopherdevChannelID
 	}
 
-	gp, err := gerrit.New(gs, newHTTPClient(), logger, gerritNotifyFactory(sc, cid))
+	ln := logger.With().Str("context", "gerrit_notifier").Logger()
+	gp, err := gerrit.New(gs, newHTTPClient(), logger, gerritNotifyFactory(ln, sc, cid, shadowMode))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new gerrit poller: %w", err)
 	}
