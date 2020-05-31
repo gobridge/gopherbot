@@ -73,6 +73,7 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGINT)
 
 	logger.Info().
+		Str("env", string(cfg.Env)).
 		Str("app", cfg.Heroku.AppName).
 		Str("dyno_id", cfg.Heroku.DynoID).
 		Str("commit", cfg.Heroku.Commit).

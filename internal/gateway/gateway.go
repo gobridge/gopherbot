@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/rs/zerolog"
 	"github.com/gobridge/gopherbot/config"
 	"github.com/gobridge/gopherbot/internal/heartbeat"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/rs/zerolog"
 )
 
 // RunServer starts the gateway HTTP server.
@@ -25,6 +25,7 @@ func RunServer(cfg config.C, logger zerolog.Logger) error {
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGINT)
 
 	logger.Info().
+		Str("env", string(cfg.Env)).
 		Str("app", cfg.Heroku.AppName).
 		Str("dyno_id", cfg.Heroku.DynoID).
 		Str("commit", cfg.Heroku.Commit).
