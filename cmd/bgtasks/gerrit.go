@@ -13,10 +13,7 @@ import (
 
 const (
 	gerritGopherdevChannelID = "C013XC5SU21"
-
-	// XXX(theckman): UNDO THIS
-	// gerritGolangclsChannelID = "C2VU4UTFZ"
-	gerritGolangclsChannelID = gerritGopherdevChannelID
+	gerritGolangclsChannelID = "C2VU4UTFZ"
 )
 
 func gerritNotifyFactory(logger zerolog.Logger, c *slack.Client, channelID string, shadowMode bool) gerrit.NotifyFunc {

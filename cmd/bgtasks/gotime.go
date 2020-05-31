@@ -13,10 +13,7 @@ import (
 
 const (
 	gotimeGopherdevChannelID = "C013XC5SU21"
-
-	// XXX(theckman): UNDO THIS
-	// golangclsChannelID = "C0F1752BB"
-	gotimeChannelID = gotimeGopherdevChannelID
+	gotimeChannelID          = "C0F1752BB"
 )
 
 const goTimeMsg = ":tada: GoTimeFM is now live :tada:"
