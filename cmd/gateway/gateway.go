@@ -1,5 +1,4 @@
-// Package gateway provides the gopher gateway server
-package gateway
+package main
 
 import (
 	"context"
@@ -18,8 +17,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// RunServer starts the gateway HTTP server.
-func RunServer(cfg config.C, logger zerolog.Logger) error {
+func runServer(cfg config.C, logger zerolog.Logger) error {
 	// set up signal catching
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGTERM, syscall.SIGINT)

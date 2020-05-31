@@ -6,7 +6,6 @@ import (
 	_ "github.com/heroku/x/hmetrics/onload"
 
 	"github.com/gobridge/gopherbot/config"
-	"github.com/gobridge/gopherbot/internal/gateway"
 )
 
 func main() {
@@ -17,7 +16,7 @@ func main() {
 
 	l := config.DefaultLogger(c)
 
-	if err := gateway.RunServer(c, l); err != nil {
+	if err := runServer(c, l); err != nil {
 		l.Fatal().
 			Err(err).
 			Msg("failed to run gateway server")

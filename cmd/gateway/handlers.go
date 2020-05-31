@@ -1,4 +1,4 @@
-package gateway
+package main
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"mime"
 	"net/http"
 
-	"github.com/rs/zerolog"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/rs/zerolog"
 	"github.com/valyala/fastjson"
 )
 

@@ -1,4 +1,4 @@
-package gateway
+package main
 
 import (
 	"bytes"
@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/gobridge/gopherbot/signing"
+	"github.com/rs/zerolog"
 	"github.com/valyala/fastjson"
 )
 
