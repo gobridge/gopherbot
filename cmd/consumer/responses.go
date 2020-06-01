@@ -239,6 +239,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`- <https://golang.org/conduct>`,
 		`If you have any questions or concerns please reach out in <#C4U9J9QBT> or email support@gobridge.org.`,
 	)
+
 	ma.HandleStatic("doesn't work", "x doesn't work", []string{"doesnt work", "doesntwork"},
 		`What do you mean it doesn't work? If there's an error, copy it in full. If it's long, use the playground.`,
 	)
