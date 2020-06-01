@@ -239,6 +239,11 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`- <https://golang.org/conduct>`,
 		`If you have any questions or concerns please reach out in <#C4U9J9QBT> or email support@gobridge.org.`,
 	)
+
+	ma.HandleStatic("ask", "how to ask questions", []string{"don't ask", "dont ask", "dontask", "just ask", "justask"},
+		`Don't ask to ask. Just ask.`,
+		`- <https://dontasktoask.com/>`,
+	)
 }
 
 const newbieResourcesMessage = `First you should take the language tour: <https://tour.golang.org/>
