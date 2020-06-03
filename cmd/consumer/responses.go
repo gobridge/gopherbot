@@ -241,7 +241,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("ask", "how to ask questions", []string{"don't ask", "dont ask", "dontask", "just ask", "justask"},
-		`Don't ask to ask. Just ask. We'll tell you let you know if there's a better place to ask.`,
+		`Don't ask to ask. Just ask. We'll let you know if there's a better place to ask.`,
 		`- <https://dontasktoask.com/>`,
 	)
 }
