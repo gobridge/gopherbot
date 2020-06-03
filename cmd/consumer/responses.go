@@ -169,7 +169,8 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("block forever", "how to block forever", []string{"how to block forever"},
-		`Here's how to block forever in Go: `+"`select {}`",
+		"Here's the most common way to block forever in Go: `select {}`.",
+		"For other ways check out this post: <https://blog.sgmansfield.com/2016/06/how-to-block-forever-in-go/>",
 	)
 
 	ma.HandleStatic("http timeouts", "info on http timeouts in Go", nil,
