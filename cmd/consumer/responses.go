@@ -206,7 +206,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("source code", "where does this bot's source live?", []string{"source"},
-		`You can find my source code, included all of my configured responses, here:`,
+		`You can find my source code, including all of my configured responses, here:`,
 		`- <https://github.com/gobridge/gopherbot>`,
 	)
 
