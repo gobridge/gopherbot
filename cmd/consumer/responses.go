@@ -249,6 +249,11 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`Can you share more context on what you expected and what you saw instead?`,
 		`If there's an error, are you able to provide it in full and share how you generated that error?`,
 	)
+
+	ma.HandleStatic("ask", "how to ask questions", []string{"don't ask", "dont ask", "dontask", "just ask", "justask"},
+		`Don't ask to ask. Just ask. We'll let you know if there's a better place to ask.`,
+		`- <https://dontasktoask.com/>`,
+	)
 }
 
 const newbieResourcesMessage = `First you should take the language tour: <https://tour.golang.org/>
