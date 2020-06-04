@@ -10,8 +10,9 @@ import (
 )
 
 var xkcdAliases = map[string]uint64{
-	"standards":    927,
 	"compiling":    303,
+	"ballmer":      323,
+	"standards":    927,
 	"optimization": 1691,
 }
 
