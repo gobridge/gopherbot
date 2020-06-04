@@ -241,7 +241,8 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("doesn't work", "x doesn't work", []string{"doesnt work", "doesntwork"},
-		`What do you mean it doesn't work? If there's an error, copy it in full. If it's long, use the playground.`,
+		`Can you share more context on what you expected and what you saw instead?`,
+		`If there's an error, are you able to provide it in full and share how you generated that error?`,
 	)
 }
 
