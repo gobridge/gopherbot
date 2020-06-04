@@ -240,6 +240,10 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`- <https://golang.org/conduct>`,
 		`If you have any questions or concerns please reach out in <#C4U9J9QBT> or email support@gobridge.org.`,
 	)
+
+	ma.HandleStatic("screenshots", "why you shouldn't use screenshots", []string{"screenshot"},
+		`Please copy and paste code. Screenshots are neither easy to read nor very accessible for many people.`,
+	)
 }
 
 const newbieResourcesMessage = `First you should take the language tour: <https://tour.golang.org/>
