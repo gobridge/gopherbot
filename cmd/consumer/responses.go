@@ -245,7 +245,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`Please copy and paste code. Screenshots are neither easy to read nor very accessible for many people.`,
 	)
 
-	ma.HandleStatic("doesn't work", "x doesn't work", []string{"doesnt work", "doesntwork"},
+	ma.HandleStatic("doesn't work", "x doesn't work", []string{"more context", "doesnt work", "doesntwork"},
 		`Can you share more context on what you expected and what you saw instead?`,
 		`If there's an error, are you able to provide it in full and share how you generated that error?`,
 	)
