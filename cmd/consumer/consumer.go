@@ -15,6 +15,7 @@ import (
 	"github.com/gobridge/gopherbot/cache"
 	"github.com/gobridge/gopherbot/cmd/consumer/playground"
 	"github.com/gobridge/gopherbot/config"
+	"github.com/gobridge/gopherbot/glossary"
 	"github.com/gobridge/gopherbot/handler"
 	"github.com/gobridge/gopherbot/internal/heartbeat"
 	"github.com/gobridge/gopherbot/workqueue"
@@ -135,6 +136,8 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 		return fmt.Errorf("failed to build MessageActions handler: %w", err)
 	}
 
+	gloss := glossary.New(glossary.Prefix)
+
 	tja := handler.NewTeamJoinActions(
 		shadowMode,
 		logger.With().Str("context", "team_join_actions").Logger(),
@@ -151,6 +154,10 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 	injectMessageReactions(ma)
 	injectMessageResponsePrefix(ma)
 
+	// handle "define " prefixed command
+	ma.HandlePrefix(glossary.Prefix, "find a definition in the glossary of Go-related terms", gloss.DefineHandler)
+
+	// set up the Go Playground uploader
 	lp := logger.With().Str("context", "playground")
 	pg := playground.New(newHTTPClient(), lp.Logger(), playgroundChannelBlacklist)
 	ma.HandleDynamic(pg.MessageMatchFn, pg.Handler)
