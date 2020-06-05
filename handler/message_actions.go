@@ -222,7 +222,7 @@ func isDM(c ChannelType) bool {
 // handlers are only invoked if the bot was mentioned.
 func (m *MessageActions) Match(message Message) []MessageAction {
 	message.text, message.allMentions = mparser.ParseAndSplice(message.rawText, message.channelID)
-	message.text = strings.TrimSpace(message.text)
+	message.text = strings.TrimSpace(message.text) // Slack already trims the space off the end
 
 	message.userMentions, message.botMentioned = onlyOtherUserMMentions(m.selfID, message.allMentions)
 
@@ -239,7 +239,7 @@ func (m *MessageActions) Match(message Message) []MessageAction {
 
 	dm := isDM(message.channelType)
 
-	if dm || !m.shadowMode {
+	if dm || message.botMentioned || !m.shadowMode {
 		for k, v := range m.reactions {
 			if strings.Contains(lt, k) && (!v.onlyWhenMentioned || message.botMentioned) {
 				a := MessageAction{

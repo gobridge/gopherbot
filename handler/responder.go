@@ -16,6 +16,11 @@ type Responder interface {
 
 	Respond(ctx context.Context, msg string, attachments ...slack.Attachment) error
 
+	// RespondTo is the same as respond, except it prefixes the message with an
+	// at-mention of the user who triggered the action. Helpful if responding
+	// with an error message.
+	RespondTo(ctx context.Context, msg string, attachments ...slack.Attachment) error
+
 	// RespondUnfurled is the same as Respond, except it asks slack to redner
 	// URL previews in the channel or DM.
 	RespondUnfurled(ctx context.Context, msg string, attachments ...slack.Attachment) error
@@ -70,62 +75,62 @@ func (r response) React(ctx context.Context, emoji string) error {
 }
 
 func (r response) Respond(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, false, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+}
+
+func (r response) RespondTo(ctx context.Context, msg string, attachments ...slack.Attachment) error {
+	return r.respond(ctx, true, false, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
 }
 
 func (r response) RespondDM(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, false, false, r.m.userID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, false, false, false, r.m.userID, r.m.threadTS, msg, attachments...)
 }
 
 func (r response) RespondUnfurled(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, false, true, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, false, false, true, r.m.channelID, r.m.threadTS, msg, attachments...)
 }
 
 func (r response) RespondTextAttachment(ctx context.Context, msg, attachment string) error {
-	return r.respond(ctx, false, false, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
+	return r.respond(ctx, false, false, false, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
 }
 
 func (r response) RespondMentions(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, true, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, true, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
 }
 
 func (r response) RespondMentionsUnfurled(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, true, false, true, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, true, false, true, r.m.channelID, r.m.threadTS, msg, attachments...)
 }
 
 func (r response) RespondMentionsTextAttachment(ctx context.Context, msg, attachment string) error {
-	return r.respond(ctx, true, false, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
+	return r.respond(ctx, false, true, false, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
 }
 
 func (r response) RespondEphemeral(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	m := mparser.Mention{
-		Type: mparser.TypeUser,
-		ID:   r.m.userID,
-	}
-
-	msg = m.String() + " " + msg
-
-	return r.respond(ctx, false, true, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, true, false, true, false, r.m.channelID, r.m.threadTS, msg, attachments...)
 }
 
 func (r response) RespondEphemeralTextAttachment(ctx context.Context, msg, attachment string) error {
-	m := mparser.Mention{
-		Type: mparser.TypeUser,
-		ID:   r.m.userID,
-	}
-
-	msg = m.String() + " " + msg
-
-	return r.respond(ctx, false, true, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
+	return r.respond(ctx, true, false, true, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
 }
 
-func (r response) respond(ctx context.Context, useMentions, ephemeral, unfurled bool, channelID, threadTS, msg string, attachments ...slack.Attachment) error {
+func (r response) respond(ctx context.Context, mentionUser, useMentions, ephemeral, unfurled bool, channelID, threadTS, msg string, attachments ...slack.Attachment) error {
 	if useMentions && ephemeral {
 		return errors.New("cannot use mentions for ephemeral messages")
 	}
 
 	if useMentions && len(r.m.userMentions) > 0 {
 		msg = mparser.Join(r.m.userMentions, " ") + msg
+	}
+
+	// do this after the above, so the original user is first in the message
+	if mentionUser {
+		u := mparser.Mention{
+			ID:   r.m.userID,
+			Type: mparser.TypeUser,
+		}
+
+		msg = fmt.Sprintf("%s %s", u.String(), msg)
 	}
 
 	var opts []slack.MsgOption
