@@ -11,7 +11,25 @@ system, the bot will not respond to any messages more than 30 seconds ago. So if
 Slack experiences an issue preventing us from replying, the message will be
 dropped.
 
-## Slack API
+## Contributing
+### Adding Responses / Reactions
+Pretty much all responses and reactions should be configured in the
+[cmd/consumer/](https://github.com/gobridge/gopherbot/tree/master/cmd/consumer)
+directory, with each thing being split out by file. How to configure each should
+be fairly straightforward based on existing examples, and the usage of the
+`handler` package is documented via GoDoc if you have any questions.
+
+### Adding Definitions to Glossary
+There is also the `define` command that is powered by the `glossary` package. If
+you'd like to add definitions to the glossary, you can [do it
+here](https://github.com/gobridge/gopherbot/blob/master/glossary/terms.go#L5)
+and raise a PR against this repo.
+
+The glossary is meant to contain common words and terms relevant to the Go
+community. It's not Urban Dictionary.
+
+## Architecture
+### Slack API
 As mentioned above, the old version used the RTM API for interacting with Slack.
 This is no longer the recommended API to use for building integrations, with
 them now suggesting [The Slack Events API](https://api.slack.com/events-api).
@@ -25,14 +43,8 @@ processing.
 The Events API offers signing of requests, so that you can be confident the
 request originated from Slack.
 
-## Adding Responses / Reactions
-Pretty much all responses and reactions should be configured in the
-`cmd/consumer/` directory, with each thing being split out by file. They should
-be straightforward, and the usage of the `handler` package is documented via
-GoDoc.
-
-## Components
-### Gateway
+### Components
+#### Gateway
 The job for the gateway is to cryptographically validate the incoming event from
 Slack, confirm that it contains the metadata we expect, and then forward the
 message on to the work queue.
@@ -47,7 +59,7 @@ There is effectively one queue for event type:
 
 The gateway is stateless and can be scaled horizontally.
 
-### Consumer
+#### Consumer
 The consumer registers a handler for each of the queues, and those handlers
 process each message internally. They themselves may have sub-handlers that get
 executed, like reacting to messages with emoji versus responding to them.
@@ -57,7 +69,7 @@ update to the workspace join message this is the component that handles those.
 
 The consumer is stateless and can be scaled horizontally.
 
-### BGTasks
+#### BGTasks
 The `bgtasks` component is meant to be a place where regular background jobs are
 ran, such as filling data caches, polling for Gerrit (Go CL) merges, or GoTime
 shows starting. 
@@ -69,7 +81,7 @@ Things here cannot be safely scaled horizontally, as it could cause double
 messages or excessive API calls / cache fills. These jobs are kept here so that
 we can avoid dealing with cluster locking, in addition to our work queue. :)
 
-### Redis
+#### Redis
 More specifically, Heroku Redis. We use Redis Streams to implement the bot's
 workqueue. It's also where we cache some data for use in the handlers, such as
 mapping channel names to IDs.
