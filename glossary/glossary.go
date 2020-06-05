@@ -52,6 +52,10 @@ func (t Terms) DefineHandler(ctx workqueue.Context, m handler.Messenger, r handl
 	lterm := strings.ToLower(term)
 	lt := lterm
 
+	if lterm == "define" {
+		return r.RespondTo(ctx, `:notsureif:`)
+	}
+
 	if v, ok := t.aliases[lterm]; ok {
 		lt = v
 	}
