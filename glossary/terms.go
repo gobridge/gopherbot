@@ -5,6 +5,8 @@ import "fmt"
 var terms = []gOption{
 	// terms represents all the terms known by the glossary
 	//
+	// the bot responds with: <TERM>, or <ALIAS>, is <DEFINITION>
+	//
 	// when adding items, please order alphabetically by the term
 
 	define("dependency injection", []string{"di"},

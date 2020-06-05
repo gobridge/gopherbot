@@ -58,7 +58,8 @@ func (t Terms) DefineHandler(ctx workqueue.Context, m handler.Messenger, r handl
 
 	d, ok := t.entries[lt]
 	if !ok {
-		return r.RespondTo(ctx, "I'm sorry, I don't have a definition for that.")
+		msg := `I'm sorry, I don't have a definition for that.\n\nPlease consider defining that term here and opening a PR: <https://github.com/gobridge/gopherbot/blob/master/glossary/terms.go#L5>`
+		return r.RespondTo(ctx, msg)
 	}
 
 	ds := strings.Join(d, "\n")
