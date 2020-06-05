@@ -28,4 +28,6 @@ func injectMessageReactions(r *handler.MessageActions) {
 
 	r.HandleStaticContains("︵", "┬─┬ノ( º _ ºノ)")
 	r.HandleStaticContains("彡", "┬─┬ノ( º _ ºノ)")
+
+	r.HandleStaticContains("proverbs", `<https://go-proverbs.github.io>`)
 }
