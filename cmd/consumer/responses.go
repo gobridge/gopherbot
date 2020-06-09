@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gobridge/gopherbot/handler"
+	"github.com/gobridge/gopherbot/mparser"
 	"github.com/gobridge/gopherbot/workqueue"
 )
 
@@ -88,6 +89,23 @@ func injectMessageResponseFuncs(ma *handler.MessageActions) {
 			}
 
 			return r.RespondMentionsTextAttachment(ctx, "Here is a list of recommended channels", builder.String())
+		},
+	)
+
+	const threadsFormatString = `It's generally best to avoid threads, and to instead reply in the channel, as they aren't super-inclusive to folks who rely on screen readers.
+
+When replying in the channel, you can at-mention the person you're directing the message to for clarity (e.g. %s).`
+
+	ma.Handle("slack threads", "helpful reminder about threads and their UX challenges", []string{"threads"},
+		func(ctx workqueue.Context, m handler.Messenger, r handler.Responder) error {
+			selfMention := mparser.Mention{
+				Type: mparser.TypeUser,
+				ID:   ctx.Self().ID,
+			}.String()
+
+			msg := fmt.Sprintf(threadsFormatString, selfMention)
+
+			return r.RespondMentions(ctx, msg)
 		},
 	)
 
