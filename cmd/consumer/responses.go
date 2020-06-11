@@ -72,7 +72,7 @@ func injectMessageResponseFuncs(ma *handler.MessageActions) {
 					ID:   newbiesChanID,
 				}.String()
 
-				msg = fmt.Sprintf("You may want to join the %s channel.\n%s", cmnt, msg)
+				msg = fmt.Sprintf("If you'd like to join others who are new to Go, we have the %s channel.\n\n%s", cmnt, msg)
 			}
 
 			return r.RespondMentionsTextAttachment(
