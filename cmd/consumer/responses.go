@@ -276,6 +276,10 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`Please copy and paste code. Screenshots are neither easy to read nor very accessible for many people.`,
 	)
 
+	ma.HandleStatic("go tour", "link to the Go tour", []string{"tour"},
+		`The Go Tour is a great resource for learning Go, and can be found here: <https://tour.golang.org/welcome/1>.`,
+	)
+
 	ma.HandleStatic("doesn't work", "x doesn't work", []string{"more context", "doesnt work", "doesntwork"},
 		`Can you share more context on what you expected and what you saw instead?`,
 		`If there's an error, are you able to provide it in full and share how you generated that error?`,
