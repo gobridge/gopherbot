@@ -44,6 +44,8 @@ var recommendedChannels = []recommendedChannel{
 	{name: "admin-help", desc: "for engaging with the moderators / admins of this Slack workspace", welcome: true},
 }
 
+const newbiesChanID = "C02A8LZKT"
+
 func injectMessageResponseFuncs(ma *handler.MessageActions) {
 	ma.Handle("flip a coin", "flips a coin, returning heads or tails", []string{"flip coin", "coin flip"},
 		func(ctx workqueue.Context, m handler.Messenger, r handler.Responder) error {
@@ -62,9 +64,20 @@ func injectMessageResponseFuncs(ma *handler.MessageActions) {
 
 	ma.Handle("newbie resources", "resources for newbies", nil,
 		func(ctx workqueue.Context, m handler.Messenger, r handler.Responder) error {
+			msg := "Here are some resources you should check out if you are learning / new to Go:"
+
+			if m.ChannelID() != newbiesChanID {
+				cmnt := mparser.Mention{
+					Type: mparser.TypeChannelRef,
+					ID:   newbiesChanID,
+				}.String()
+
+				msg = fmt.Sprintf("You may want to join the %s channel.\n%s", cmnt, msg)
+			}
+
 			return r.RespondMentionsTextAttachment(
 				ctx,
-				"Here are some resources you should check out if you are learning / new to Go:",
+				msg,
 				newbieResourcesMessage,
 			)
 		},
