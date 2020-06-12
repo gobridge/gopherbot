@@ -232,6 +232,10 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`Tips on how to write idiomatic Go code <https://dmitri.shuralyov.com/idiomatic-go>`,
 	)
 
+	ma.HandleStatic("invite link", "URL for getting an invite to the workspace", []string{"invite", "slack invite", "workspace invite"},
+		`<https://invite.slack.golangbridge.org/>`,
+	)
+
 	ma.HandleStatic("avoid gotchas", "avoid common Go gotchas", []string{"gotchas"},
 		`Read this article if you want to understand and avoid common gotchas in Go <https://divan.github.io/posts/avoid_gotchas>`,
 	)
