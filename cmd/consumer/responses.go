@@ -277,7 +277,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("screenshots", "why you shouldn't use screenshots", []string{"screenshot"},
-		`Please copy and paste code. Screenshots are neither easy to read nor very accessible for many people.`,
+		`Screenshots are neither easy to read nor very accessible for many people. Please consider copying code, errors, or command output into a Slack snippet, the <https://play.golang.org/|Go Playground>, or a <https://gist.github.com/|GitHub Gist>.`,
 	)
 
 	ma.HandleStatic("go tour", "link to the Go tour", []string{"tour"},
