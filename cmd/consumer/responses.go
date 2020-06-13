@@ -264,7 +264,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("playground", "info on sharing Go code via the Go Playground", []string{"go playground", "goplay", "goplay space"},
-		`The Go Playground offers a specialized runtime environment, that others can iterate on the code and share it back with you:`,
+		`Please share your code via the Go Playground. The Playground offers a specialized runtime environment, that others can use to read your code, iterate on it, and share it back with you:`,
 		`- <https://play.golang.org/>`,
 		`There is also this stylized alternate front-end: <https://goplay.space/>`,
 	)
