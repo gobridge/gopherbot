@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"github.com/slack-go/slack/slackevents"
 	"github.com/gobridge/gopherbot/mparser"
+	"github.com/slack-go/slack/slackevents"
 )
 
 // ChannelType represents where a message was sent.
@@ -109,6 +109,7 @@ type Message struct {
 	userID       string
 	threadTS     string
 	messageTS    string
+	subType      string
 	allMentions  []mparser.Mention
 	userMentions []mparser.Mention
 	text         string
@@ -120,13 +121,14 @@ type Message struct {
 var _ Messenger = Message{}
 
 // NewMessage generates a new message from the various inputs.
-func NewMessage(channelID, channelType, userID, threadTS, messageTS, text string, files []slackevents.File) Message {
+func NewMessage(channelID, channelType, userID, threadTS, messageTS, subType, text string, files []slackevents.File) Message {
 	return Message{
 		channelID:   channelID,
 		channelType: strToChan(channelType),
 		userID:      userID,
 		threadTS:    threadTS,
 		messageTS:   messageTS,
+		subType:     subType,
 		rawText:     text,
 		files:       files,
 	}
@@ -146,6 +148,9 @@ func (m Message) ThreadTS() string { return m.threadTS }
 
 // MessageTS satisfies the Messenger interface.
 func (m Message) MessageTS() string { return m.messageTS }
+
+// SubType satisfies the Messenger interface.
+func (m Message) SubType() string { return m.subType }
 
 // AllMentions satisfies the Messenger interface.
 func (m Message) AllMentions() []mparser.Mention { return m.allMentions }

@@ -122,8 +122,8 @@ func (m *MessageActions) Registered() []RegisteredMessageHandler {
 }
 
 func shouldDiscard(m *slackevents.MessageEvent) (string, bool) {
-	if len(m.SubType) > 0 {
-		return "message has subtype", true
+	if len(m.SubType) > 0 && m.SubType != "thread_broadcast" {
+		return fmt.Sprintf("message has subtype %s", m.SubType), true
 	}
 
 	tss := strings.Split(m.TimeStamp, ".")[0]
@@ -156,7 +156,7 @@ func (m *MessageActions) Handler(ctx workqueue.Context, me *slackevents.MessageE
 
 	actions := m.Match(
 		NewMessage(
-			me.Channel, me.ChannelType, me.User, me.ThreadTimeStamp, me.TimeStamp, me.Text, me.Files,
+			me.Channel, me.ChannelType, me.User, me.ThreadTimeStamp, me.TimeStamp, me.SubType, me.Text, me.Files,
 		),
 	)
 
