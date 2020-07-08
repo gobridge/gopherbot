@@ -3,10 +3,10 @@ package handler
 import (
 	"fmt"
 
-	"github.com/rs/zerolog"
-	"github.com/slack-go/slack"
 	"github.com/gobridge/gopherbot/mparser"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/rs/zerolog"
+	"github.com/slack-go/slack"
 )
 
 // TeamJoiner is the interface to represent an incoming team join event.
@@ -47,7 +47,7 @@ func (t *TeamJoinActions) Handler(ctx workqueue.Context, tj *slack.TeamJoinEvent
 		Type: mparser.TypeUser,
 		ID:   j.ID,
 	}
-	msg := NewMessage(j.ID, "im", j.ID, "", "", "", nil)
+	msg := NewMessage(j.ID, "im", j.ID, "", "", "", "", nil)
 	msg.allMentions = []mparser.Mention{mention}
 	msg.userMentions = []mparser.Mention{mention}
 

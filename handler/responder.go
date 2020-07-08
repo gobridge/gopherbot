@@ -75,46 +75,46 @@ func (r response) React(ctx context.Context, emoji string) error {
 }
 
 func (r response) Respond(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, false, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, false, false, false, r.m.channelID, r.m.threadTS, r.m.subType, msg, attachments...)
 }
 
 func (r response) RespondTo(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, true, false, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, true, false, false, false, r.m.channelID, r.m.threadTS, r.m.subType, msg, attachments...)
 }
 
 func (r response) RespondDM(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, false, false, false, r.m.userID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, false, false, false, r.m.userID, r.m.threadTS, r.m.subType, msg, attachments...)
 }
 
 func (r response) RespondUnfurled(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, false, false, true, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, false, false, true, r.m.channelID, r.m.threadTS, r.m.subType, msg, attachments...)
 }
 
 func (r response) RespondTextAttachment(ctx context.Context, msg, attachment string) error {
-	return r.respond(ctx, false, false, false, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
+	return r.respond(ctx, false, false, false, false, r.m.channelID, r.m.threadTS, r.m.subType, msg, slack.Attachment{Text: attachment})
 }
 
 func (r response) RespondMentions(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, true, false, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, true, false, false, r.m.channelID, r.m.threadTS, r.m.subType, msg, attachments...)
 }
 
 func (r response) RespondMentionsUnfurled(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, false, true, false, true, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, false, true, false, true, r.m.channelID, r.m.threadTS, r.m.subType, msg, attachments...)
 }
 
 func (r response) RespondMentionsTextAttachment(ctx context.Context, msg, attachment string) error {
-	return r.respond(ctx, false, true, false, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
+	return r.respond(ctx, false, true, false, false, r.m.channelID, r.m.threadTS, r.m.subType, msg, slack.Attachment{Text: attachment})
 }
 
 func (r response) RespondEphemeral(ctx context.Context, msg string, attachments ...slack.Attachment) error {
-	return r.respond(ctx, true, false, true, false, r.m.channelID, r.m.threadTS, msg, attachments...)
+	return r.respond(ctx, true, false, true, false, r.m.channelID, r.m.threadTS, r.m.subType, msg, attachments...)
 }
 
 func (r response) RespondEphemeralTextAttachment(ctx context.Context, msg, attachment string) error {
-	return r.respond(ctx, true, false, true, false, r.m.channelID, r.m.threadTS, msg, slack.Attachment{Text: attachment})
+	return r.respond(ctx, true, false, true, false, r.m.channelID, r.m.threadTS, r.m.subType, msg, slack.Attachment{Text: attachment})
 }
 
-func (r response) respond(ctx context.Context, mentionUser, useMentions, ephemeral, unfurled bool, channelID, threadTS, msg string, attachments ...slack.Attachment) error {
+func (r response) respond(ctx context.Context, mentionUser, useMentions, ephemeral, unfurled bool, channelID, threadTS, subType, msg string, attachments ...slack.Attachment) error {
 	if useMentions && ephemeral {
 		return errors.New("cannot use mentions for ephemeral messages")
 	}
@@ -147,7 +147,13 @@ func (r response) respond(ctx context.Context, mentionUser, useMentions, ephemer
 	opts = append(opts, slack.MsgOptionText(msg, false))
 
 	if len(threadTS) > 0 {
-		opts = append(opts, slack.MsgOptionTS(r.m.threadTS))
+		opts = append(opts, slack.MsgOptionTS(threadTS))
+	}
+
+	// if it's a command that was triggered in a shared thread reply
+	// we should share our reply with the channel too
+	if len(subType) > 0 && subType == "thread_broadcast" {
+		opts = append(opts, slack.MsgOptionBroadcast())
 	}
 
 	if len(attachments) > 0 {

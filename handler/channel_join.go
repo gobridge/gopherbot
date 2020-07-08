@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rs/zerolog"
-	"github.com/slack-go/slack/slackevents"
 	"github.com/gobridge/gopherbot/mparser"
 	"github.com/gobridge/gopherbot/workqueue"
+	"github.com/rs/zerolog"
+	"github.com/slack-go/slack/slackevents"
 )
 
 // ChannelJoiner is the interface to represent an incoming team join event.
@@ -62,7 +62,7 @@ func (c *ChannelJoinActions) Handler(ctx workqueue.Context, cj *slackevents.Memb
 		Type: mparser.TypeUser,
 		ID:   j.userID,
 	}
-	msg := NewMessage(j.channelID, cj.ChannelType, j.userID, "", "", "", nil)
+	msg := NewMessage(j.channelID, cj.ChannelType, j.userID, "", "", "", "", nil)
 	msg.allMentions = []mparser.Mention{mention}
 	msg.userMentions = []mparser.Mention{mention}
 
