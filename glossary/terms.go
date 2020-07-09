@@ -10,7 +10,7 @@ var terms = []gOption{
 	// when adding items, please order alphabetically by the term
 
 	define("domain-driven design", []string{"ddd", "domain-driven development", "domain driven design"},
-		`Domain-driven Design (aka Domain-driven Development) is a concept around how to structure your source code around business domain(s).`,
+		`a concept around how to structure your source code around business domain(s).`,
 		`See <https://en.wikipedia.org/wiki/Domain-driven_design> for more info.`,
 	),
 
