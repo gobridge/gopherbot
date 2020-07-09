@@ -167,7 +167,7 @@ When replying in the channel, you can at-mention the person you're directing the
 				}
 			}
 
-			return r.RespondMentionsTextAttachment(ctx, "I respond to the following commands:", b.String())
+			return r.RespondMentionsTextAttachment(ctx, "I respond to the following commands in public channels, or via a direct (private) message:", b.String())
 		},
 	)
 }
