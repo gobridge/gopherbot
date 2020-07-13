@@ -197,7 +197,7 @@ func (c *Client) MessageMatchFn(shadowMode bool, m handler.Messenger) bool {
 	return true
 }
 
-// postToPlayground converts the text of a post into code for the playground. It is not perfect but works most of the time.
+// messageToPlayground converts the text of a post into code for the playground. It is not perfect but works most of the time.
 // Text outside of ``` quotes is converted into a comment and included in the code, everything inside of those quotes is
 // considered code and pasted as-is.
 func messageToPlayground(text string) *bytes.Buffer {
