@@ -53,7 +53,8 @@ func (c *Client) Handler(ctx workqueue.Context, m handler.Messenger, r handler.R
 }
 
 func (c *Client) pgForMessage(ctx workqueue.Context, m handler.Messenger, r handler.Responder) error {
-	link, err := c.upload(ctx, strings.NewReader(m.Text()))
+
+	link, err := c.upload(ctx, messageToPlayground(m.Text()))
 	if err != nil {
 		return fmt.Errorf("failed to upload to playground: %w", err)
 	}
@@ -194,4 +195,37 @@ func (c *Client) MessageMatchFn(shadowMode bool, m handler.Messenger) bool {
 	}
 
 	return true
+}
+
+// postToPlayground converts the text of a post into code for the playground. It is not perfect but works most of the time.
+// Text outside of ``` quotes is converted into a comment and included in the code, everything inside of those quotes is
+// considered code and pasted as-is.
+func messageToPlayground(text string) *bytes.Buffer {
+	var buf bytes.Buffer
+	parts := strings.Split(text, "```")
+
+	for i, part := range parts {
+		part = strings.Trim(part, "\n")
+
+		if i&1 == 0 {
+			// it's a comment
+			if strings.TrimSpace(part) == "" {
+				continue
+			}
+
+			buf.WriteString("// ")
+			buf.WriteString(strings.Replace(part, "\n", "\n// ", -1))
+			buf.WriteByte('\n')
+		} else {
+			// it's code
+			if part == "" {
+				continue
+			}
+
+			buf.WriteString(part)
+			buf.WriteByte('\n')
+		}
+	}
+
+	return &buf
 }
