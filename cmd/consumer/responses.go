@@ -219,6 +219,10 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`Here's how to work with database/sql in Go: <http://go-database-sql.org/>`,
 	)
 
+	ma.HandleStatic("empty struct", "information about values of type `struct{}`", []string{"zero struct", "struct{}"},
+		"You can find out more about the `struct{}` type in this post by Dave Cheney: <https://dave.cheney.net/2014/03/25/the-empty-struct>",
+	)
+
 	ma.HandleStatic("project layout", "guidance on how to structure your Go projects", []string{"project structure", "package layout", "package structure"},
 		`These articles will explain how to organize your Go packages:`,
 		`- <https://rakyll.org/style-packages/>`,
