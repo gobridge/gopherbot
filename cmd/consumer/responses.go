@@ -298,7 +298,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`- <https://dontasktoask.com/>`,
 	)
 
-	ma.HandleStatic("crosspost", "cross-posting to multiple channels", []string{"crosspost", "xpost"},
+	ma.HandleStatic("crosspost", "cross-posting to multiple channels", []string{"xpost"},
 		`Please keep your questions to a single channel. If you don't get a reply in a while, then consider cross-posting.`,
 	)
 }
