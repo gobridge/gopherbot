@@ -297,6 +297,10 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`Don't ask to ask. Just ask. We'll let you know if there's a better place to ask.`,
 		`- <https://dontasktoask.com/>`,
 	)
+
+	ma.HandleStatic("crosspost", "cross-posting to multiple channels", []string{"xpost"},
+		`Please keep your questions to a single channel. If you don't get a reply in a while, then consider cross-posting.`,
+	)
 }
 
 const newbieResourcesMessage = `First you should take the language tour: <https://tour.golang.org/>
