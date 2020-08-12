@@ -162,7 +162,7 @@ func (r response) respond(ctx context.Context, mentionUser, useMentions, ephemer
 
 	if ephemeral {
 		if _, err := r.sc.PostEphemeralContext(ctx, channelID, r.m.userID, opts...); err != nil {
-			return fmt.Errorf("failed to PostEphemeralContext: %w", err)
+			return fmt.Errorf("failed to PostEphemeralContext to channel %s user %s: %w", channelID, r.m.userID, err)
 		}
 	} else {
 		if _, _, _, err := r.sc.SendMessageContext(ctx, channelID, opts...); err != nil {

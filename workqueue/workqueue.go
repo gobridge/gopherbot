@@ -425,7 +425,7 @@ func teamJoinHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, botUse
 }
 
 func channelJoinHandlerFactory(baseLogger *zerolog.Logger, sc *slack.Client, botUser *slack.User, csvc ChannelSvc, timeout time.Duration, fn ChannelJoinHandler) redisqueue.ConsumerFunc {
-	flogger := baseLogger.With().Str("handler", "team_join").Logger()
+	flogger := baseLogger.With().Str("handler", "channel_join").Logger()
 
 	return func(m *redisqueue.Message) error {
 		start := time.Now()
