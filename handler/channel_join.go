@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gobridge/gopherbot/mparser"
 	"github.com/gobridge/gopherbot/workqueue"
@@ -99,6 +100,11 @@ func (c *ChannelJoinActions) Handler(ctx workqueue.Context, cj *slackevents.Memb
 					Msg("failed to take action")
 
 				return false, false, nil
+			}
+
+			// if it's too old discard
+			if time.Since(ctx.Meta().Time) >= 10*time.Minute {
+				return false, true, fmt.Errorf("discarding failed join action due to age: %w", err)
 			}
 
 			// force a retry
