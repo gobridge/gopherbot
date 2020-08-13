@@ -182,6 +182,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`- Jessie Frazelle <https://twitter.com/jessfraz|@jessfraz> - <https://blog.jessfraz.com>`,
 		`- William "Bill" Kennedy <https://twitter.com|@goinggodotnet> - <https://www.goinggo.net>`,
 		`- Brian Ketelsen <https://twitter.com/bketelsen|@bketelsen> - <https://www.brianketelsen.com/blog>`,
+		`- TutorialEdge (Elliot Forbes) <https://twitter.com/elliot_f|@elliot_f> - <https://tutorialedge.net/course/golang/>`,
 	)
 
 	ma.HandleStatic("books", "returns a list of books about Go that can help you get started", nil,
@@ -231,7 +232,11 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		``,
 		`This article will help you understand the design philosophy for packages: <https://www.goinggo.net/2017/02/design-philosophy-on-packaging.html>`,
 	)
-
+	
+	ma.HandleStatic("go challenges", "want to challenge your Go skills in interactive?", []string{"challenges", "challenge"},
+		"Check out the growing list of Go challenges - <https://tutorialedge.net/challenges/go/>", 
+       )
+	
 	ma.HandleStatic("idiomatic go", "want tips on writing idiomatic Go?", nil,
 		`Tips on how to write idiomatic Go code <https://dmitri.shuralyov.com/idiomatic-go>`,
 	)
@@ -319,6 +324,7 @@ There are some awesome websites as well:
  - <https://dmitri.shuralyov.com/idiomatic-go> tips on how to write more idiomatic Go code
  - <https://divan.github.io/posts/avoid_gotchas> will help you avoid gotchas in Go
  - <https://golangbot.com> tutorials to help you get started in Go
+ - <https://tutorialedge.net> a collection of articles around various aspects of Go
 
 There's also an exhaustive list of videos <http://gophervids.appspot.com> related to Go from various authors.
 
