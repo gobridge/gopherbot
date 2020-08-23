@@ -231,7 +231,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		``,
 		`This article will help you understand the design philosophy for packages: <https://www.goinggo.net/2017/02/design-philosophy-on-packaging.html>`,
 	)
-	
+
 	ma.HandleStatic("go challenges", "want to challenge your Go skills in interactive?", []string{"challenges", "challenge"},
 		"Check out the growing list of Go challenges - <https://tutorialedge.net/challenges/go/>",
 	)
