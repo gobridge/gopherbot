@@ -233,9 +233,9 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 	
 	ma.HandleStatic("go challenges", "want to challenge your Go skills in interactive?", []string{"challenges", "challenge"},
-		"Check out the growing list of Go challenges - <https://tutorialedge.net/challenges/go/>", 
-       )
-	
+		"Check out the growing list of Go challenges - <https://tutorialedge.net/challenges/go/>",
+	)
+
 	ma.HandleStatic("idiomatic go", "want tips on writing idiomatic Go?", nil,
 		`Tips on how to write idiomatic Go code <https://dmitri.shuralyov.com/idiomatic-go>`,
 	)
