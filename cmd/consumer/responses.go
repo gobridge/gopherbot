@@ -182,7 +182,6 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`- Jessie Frazelle <https://twitter.com/jessfraz|@jessfraz> - <https://blog.jessfraz.com>`,
 		`- William "Bill" Kennedy <https://twitter.com|@goinggodotnet> - <https://www.goinggo.net>`,
 		`- Brian Ketelsen <https://twitter.com/bketelsen|@bketelsen> - <https://www.brianketelsen.com/blog>`,
-		`- TutorialEdge (Elliot Forbes) <https://twitter.com/elliot_f|@elliot_f> - <https://tutorialedge.net/course/golang/>`,
 	)
 
 	ma.HandleStatic("books", "returns a list of books about Go that can help you get started", nil,
