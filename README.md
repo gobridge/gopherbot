@@ -110,3 +110,17 @@ environment with these environment variables:
 | `HEROKU_APP_NAME`               | The human-readable name of the application. This is used for Redis key generation, and must be set.                                                     |
 | `HEROKU_DYNO_ID`                | The UUID Heroku gives each Dyno (worker process). This is used for Redis key generation, and must be set.                                               |
 | `HEROKU_SLUG_COMMIT`            | The commit of the code running. This is used in logging, and should be set.                                                                             |
+
+## Deployment
+The bot is currently running under the GoBridge Heroku organization, and merges
+to master are automatically deployed to the staging version (`@glenda`**. If a
+merge to master seems to have deployed okay automatically, you need to go into
+the Heroku UI and and promote each running app to production.
+
+**Please Note:** Because Bill had requested our repo be a monorepo, our Heroku
+deployment configuration is an operational landmine. When clicking the "Promote
+to Production" button, you need to deselect the unrelated apps so that you don't
+accidentally promote the wrong build to production. For example, if you're
+promoting the gateway component you need to make sure not to promote it to the
+bgtasks or consumer apps. This will break the bot, and require some manual
+action to fix the production deployment.
