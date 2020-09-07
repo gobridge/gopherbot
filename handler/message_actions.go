@@ -126,6 +126,17 @@ func shouldDiscard(m *slackevents.MessageEvent) (string, bool) {
 		return fmt.Sprintf("message has subtype %s", m.SubType), true
 	}
 
+	// TODO(theckman): as of now the bot is unable to recognize whether a
+	// thread_broadcast message was from itself or not. We need to add support
+	// for parsing the root subkey of the thread_broadcast message event:
+	// https://api.slack.com/events/message/thread_broadcast, because that's the
+	// user we care about.
+	//
+	// Once that's added we should discard thread_broadcast messages from
+	// ourselves.
+	//
+	// Also, see related TODO in responder.go.
+
 	tss := strings.Split(m.TimeStamp, ".")[0]
 
 	// we assume this is a well-formed message
