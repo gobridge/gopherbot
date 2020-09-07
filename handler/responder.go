@@ -152,9 +152,14 @@ func (r response) respond(ctx context.Context, mentionUser, useMentions, ephemer
 
 	// if it's a command that was triggered in a shared thread reply
 	// we should share our reply with the channel too
-	if len(subType) > 0 && subType == "thread_broadcast" {
-		opts = append(opts, slack.MsgOptionBroadcast())
-	}
+	//
+	// TODO(theckman): re-enable this functionality once gopher is able to
+	// recognize thread_broadcast messages from itself. See TODO in
+	// message_actions.go for more context.
+	//
+	// if len(subType) > 0 && subType == "thread_broadcast" {
+	// 	opts = append(opts, slack.MsgOptionBroadcast())
+	// }
 
 	if len(attachments) > 0 {
 		opts = append(opts, slack.MsgOptionAttachments(attachments...))
