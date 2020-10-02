@@ -19,6 +19,24 @@ var terms = []gOption{
 		``,
 		"Note: my `dependency injection` command provides more details on how to use dependency injection in Go.",
 	),
+
+	define("test-driven development", []string{"tdd", "test-driven development", "test driven development"},
+		`a concept around writing tests first followed by just enough code to satisfy the test and, eventually, refactoring`,
+		`See <https://en.wikipedia.org/wiki/Test-driven_development> for more info.`,
+	),
+
+	define("variadic", []string{"variadic", "variadic parameter", "variadic function"},
+		`a concept describing the use of a parameter type in a function signature which may occur zero to many times.`,
+		``,
+		`Note: the ellipsis (...) is used to denote a variadic (e.g. parameter ...string) and it is the last parameter in the signature.`
+	),
+
+	define("blank identifier", []string{"blank", "blank identifier", "underscore"},
+		`an indicator that something is not used. in a for loop, as an example, the index may be ignored when it is not needed (for _, val...).`,
+		``,
+		`Note: when used with a package name, the blank identifier allows the Go compiler to execute the init function but does not require the package to be called.`,
+		`  This is a common practice for packages such as database drivers.`,
+	),
 }
 
 type gOption func(t *Terms)
