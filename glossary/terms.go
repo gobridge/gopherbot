@@ -28,7 +28,7 @@ var terms = []gOption{
 	define("variadic", []string{"variadic", "variadic parameter", "variadic function"},
 		`a concept describing the use of a parameter type in a function signature which may occur zero to many times.`,
 		``,
-		`Note: the ellipsis (...) is used to denote a variadic (e.g. parameter ...string) and it is the last parameter in the signature.`
+		`Note: the ellipsis (...) is used to denote a variadic (e.g. parameter ...string) and it is the last parameter in the signature.`,
 	),
 
 	define("blank identifier", []string{"blank", "blank identifier", "underscore"},
