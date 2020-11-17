@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"html"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -202,6 +203,9 @@ func (c *Client) MessageMatchFn(shadowMode bool, m handler.Messenger) bool {
 // considered code and pasted as-is.
 func messageToPlayground(text string) *bytes.Buffer {
 	var buf bytes.Buffer
+
+	// unescape the post to prevent the insertion of HTML escapes into the playground
+	text = html.UnescapeString(text)
 	parts := strings.Split(text, "```")
 
 	for i, part := range parts {
