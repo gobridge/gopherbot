@@ -217,9 +217,9 @@ func messageToPlayground(text string) *bytes.Buffer {
 				continue
 			}
 
-			buf.WriteString("// ")
+			buf.WriteString("\n// ")
 			buf.WriteString(strings.Replace(part, "\n", "\n// ", -1))
-			buf.WriteByte('\n')
+			buf.WriteString("\n\n")
 		} else {
 			// it's code
 			if part == "" {
