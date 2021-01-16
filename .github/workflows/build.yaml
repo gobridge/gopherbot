@@ -16,6 +16,9 @@ jobs:
 
       - name: Check out
         uses: actions/checkout@v2
+      
+      - name: go fmt
+        run: "! go fmt ./... 2>&1 | read"
 
       - name: go vet
         run: go vet -mod=vendor ./...
