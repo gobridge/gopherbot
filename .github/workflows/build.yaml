@@ -20,8 +20,5 @@ jobs:
       - name: go vet
         run: go vet -mod=vendor ./...
 
-      - name: Build
-        run: go build -v -mod=vendor .
-
       - name: Test
         run: go test -race -cover -v -mod=vendor ./...
