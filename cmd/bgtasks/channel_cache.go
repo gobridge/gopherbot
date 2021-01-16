@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/gobridge/gopherbot/cache"
 	"github.com/rs/zerolog"
 	"github.com/slack-go/slack"
-	"github.com/gobridge/gopherbot/cache"
 )
 
 func setUpChannelCacheFiller(ctx context.Context, logger zerolog.Logger, sc *slack.Client, rc *redis.Client) (chan struct{}, error) {
