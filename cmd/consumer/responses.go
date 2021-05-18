@@ -180,7 +180,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`- Dave Cheney <https://twitter.com/davecheney|@davecheney> - <http://dave.cheney.net>`,
 		`- Jaana Burcu Dogan <https://twitter.com/rakyll|@rakyll> - <http://golang.rakyll.org>`,
 		`- Jessie Frazelle <https://twitter.com/jessfraz|@jessfraz> - <https://blog.jessfraz.com>`,
-		`- William "Bill" Kennedy <https://twitter.com|@goinggodotnet> - <https://www.goinggo.net>`,
+		`- William "Bill" Kennedy <https://twitter.com/goinggodotnet|@goinggodotnet> - <https://www.goinggo.net>`,
 		`- Brian Ketelsen <https://twitter.com/bketelsen|@bketelsen> - <https://www.brianketelsen.com/blog>`,
 	)
 
