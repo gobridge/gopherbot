@@ -306,6 +306,52 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	ma.HandleStatic("crosspost", "cross-posting to multiple channels", []string{"xpost"},
 		`Please keep your questions to a single channel. If you don't get a reply in a while, then consider cross-posting.`,
 	)
+
+	injectFyneMessageResponses(ma)
+}
+
+func injectFyneMessageResponses(ma *handler.MessageActions) {
+	ma.HandleStatic("fyne books", "returns a list of books that cover the Fyne toolkit", nil,
+		`Here are some helpful books that discuss Fyne:`,
+		`- Andrew Williams Building Cross-Platform GUI Applications with Fyne <https://www.packtpub.com/product/building-cross-platform-gui-applications-with-fyne/9781800563162>`,
+		`- Andrew Williams Hands-On GUI Application Development in Go <https://www.packtpub.com/product/hands-on-gui-application-development-in-go/9781789138412>`,
+	)
+
+	ma.HandleStatic("fyne tour", "link to the Fyne tour", nil,
+		`The Fyne Tour is a starting point for learning the toolkit, and can be found here: <https://tour.fyne.io/>`,
+	)
+
+	ma.HandleStatic("fyne compile", "tips for common Fyne compile issues", []string{"fyne cgo", "fyne windows"},
+		`To compile a Fyne app you will need CGo working which requires a C compiler as well as Go.
+			For more information follow the platform specific hints at <https://developer.fyne.io/started/>.
+			Windows based developers may need to double check that their C compiler is 64bit as many default to 32`,
+	)
+
+	ma.HandleStatic("fyne docs", "link to the Fyne documentation", []string{"fyne doc"},
+		`There are various sources of Fyne documentation depending on what you are looking for:`,
+		`- Getting started <https://developer.fyne.io/started/>`,
+		`- API documentation <https://developer.fyne.io/api/>`,
+		`- Tutorials and tips for advanced topics <https://developer.fyne.io/tutorial/>`,
+		`- Video tutorials and conference recordings <https://www.youtube.com/c/fyne-io>`,
+	)
+
+	ma.HandleStatic("fyne layouts", "information about Fyne layout handling", []string{"fyne layout"},
+		`In Fyne, a containers layout controls the size and position of widgets,
+			there is a list of standard layouts at <https://developer.fyne.io/started/layouts>
+			and you can build your own <https://developer.fyne.io/tutorial/custom-layout>`,
+	)
+
+	ma.HandleStatic("fyne sizes", "information about widget sizing in Fyne", []string{"fyne size"},
+		`In Fyne, a widgets size and position is controlled by the layout of the container that it is inside <https://developer.fyne.io/faq/layout>.
+		If your widget is too small perhaps consider avoiding use of VBox and HBox which try to pack items in small.`,
+	)
+
+	ma.HandleStatic("fyne theme", "links for information about Fyne themes", []string{"fyne themes", "fyne style", "fyne styles"},
+		`The look and feel of a Fyne application is controlled by the current theme.
+			The default material design theme has both light and dark modes (set by user preference)
+			Apps can specify a custom theme <https://developer.fyne.io/tutorial/custom-theme>,
+			more info about customisation at <https://developer.fyne.io/faq/theme>`,
+	)
 }
 
 const newbieResourcesMessage = `First you should take the language tour: <https://tour.golang.org/>
