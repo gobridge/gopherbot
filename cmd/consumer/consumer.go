@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/gobridge/gopherbot/cache"
-	"github.com/gobridge/gopherbot/cmd/consumer/playground"
 	"github.com/gobridge/gopherbot/config"
 	"github.com/gobridge/gopherbot/glossary"
 	"github.com/gobridge/gopherbot/handler"
@@ -22,16 +21,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/slack-go/slack"
 )
-
-// playgroundChannelBlacklist sets a list of channels the playground uploader will
-// not operate in
-var playgroundChannelBlacklist = []string{
-	"C4U9J9QBT", // #admin-help
-	"C029RQSEG", // #random
-	"G1L7RN06B", // admin private channel
-	"G207C8R1R", // gobridge ops chanel
-	"GB1KBRGKA", // modnar (private random channel)
-}
 
 func getSelf(c *slack.Client) (*slack.User, error) {
 	// full lifetime of this function
@@ -69,7 +58,7 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 
 	sc := slack.New(cfg.Slack.BotAccessToken, slack.OptionHTTPClient(newHTTPClient()))
 
-	// test credentails and get self reference
+	// test credentials and get self reference
 	self, err := getSelf(sc)
 	if err != nil {
 		return err
@@ -107,7 +96,7 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 
 	cCache := cache.NewChannel(rc)
 
-	// set up the workqueue
+	// set up the work queue
 	q, err := workqueue.New(workqueue.Config{
 		ConsumerName:      cfg.Heroku.DynoID,
 		ConsumerGroup:     cfg.Heroku.AppName,
@@ -157,11 +146,6 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 	// handle "define " prefixed command
 	ma.HandlePrefix(glossary.Prefix, "find a definition in the glossary of Go-related terms", gloss.DefineHandler)
 
-	// set up the Go Playground uploader
-	lp := logger.With().Str("context", "playground")
-	pg := playground.New(newHTTPClient(), lp.Logger(), playgroundChannelBlacklist)
-	ma.HandleDynamic(pg.MessageMatchFn, pg.Handler)
-
 	injectTeamJoinHandlers(tja)
 	injectChannelJoinHandlers(cja)
 
@@ -201,7 +185,6 @@ func newHTTPTransport() *http.Transport {
 		DialContext: (&net.Dialer{
 			Timeout:   10 * time.Second,
 			KeepAlive: 30 * time.Second,
-			DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       60 * time.Second,
