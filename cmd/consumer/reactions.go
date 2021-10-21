@@ -6,8 +6,6 @@ func injectMessageReactions(r *handler.MessageActions) {
 	r.HandleReaction("bbq", "bbqgopher")
 	r.HandleReaction("ghost", "ghost")
 	r.HandleReaction("spacex", "rocket")
-	r.HandleReaction("buffalo", "gobuffalo")
-	r.HandleReaction("gobuffalo", "gobuffalo")
 	r.HandleReaction("spacemacs", "spacemacs")
 	r.HandleReaction("my adorable little gophers", "gopher")
 
