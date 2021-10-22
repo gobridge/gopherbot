@@ -96,7 +96,7 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 
 	cCache := cache.NewChannel(rc)
 
-	// set up the work queue
+	// set up the workqueue
 	q, err := workqueue.New(workqueue.Config{
 		ConsumerName:      cfg.Heroku.DynoID,
 		ConsumerGroup:     cfg.Heroku.AppName,
