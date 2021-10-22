@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -38,9 +39,9 @@ type GoTime struct {
 // startTimeVariance sets the window around the stream's start time when
 // a live steam will be considered a GoTime live stream. This is necessary
 // because the current changelog APIs return whether any show is streaming
-// rather thahn GoTime specifically.
+// rather than GoTime specifically.
 //
-// notify is called when streaming starts. notify should return true when a successful.
+// notify is called when streaming starts. notify should return true when successful.
 func New(s Store, c *http.Client, logger zerolog.Logger, startTimeVariance time.Duration, notify NotifyFunc) (*GoTime, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -117,7 +118,7 @@ func (gt *GoTime) Poll(ctx context.Context) error {
 		Msg("sending notification that it's Go Time")
 
 	if err := gt.notify(ctx); err != nil {
-		return fmt.Errorf("Go Time notification failed: %w", err)
+		return fmt.Errorf("failed notification for Go Time: %w", err)
 	}
 
 	gt.lastNotified = now
@@ -141,7 +142,9 @@ func (gt *GoTime) get(ctx context.Context, url string, i interface{}) error {
 	if err != nil {
 		return fmt.Errorf("making http request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("non-200 status code: %d - %s", resp.StatusCode, resp.Status)

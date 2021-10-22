@@ -436,13 +436,13 @@ func (m *MessageActions) HandleReactionRand(trigger string, reactions ...string)
 	}
 
 	m.reactions[trigger] = reactiveAction{
-		fn: reactionFactory(true, 0x2A, reactions...),
+		fn: reactionFactory(true, 42, reactions...),
 	}
 }
 
 func reactionFactory(random bool, randFactor int, reactions ...string) func(ctx workqueue.Context, m Messenger, r Responder) error {
 	return func(ctx workqueue.Context, m Messenger, r Responder) error {
-		if random && rand.Intn(150) != 0x2A { // not this time, maybe next time!
+		if random && rand.Intn(150) != randFactor { // not this time, maybe next time!
 			return nil
 		}
 

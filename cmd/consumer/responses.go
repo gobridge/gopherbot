@@ -97,7 +97,7 @@ func injectMessageResponseFuncs(ma *handler.MessageActions) {
 					continue // weird...
 				}
 
-				fmt.Fprintf(builder, "- <#%s> -> %s\n", c.ID, channel.desc)
+				_, _ = fmt.Fprintf(builder, "- <#%s> -> %s\n", c.ID, channel.desc)
 
 			}
 
@@ -144,26 +144,26 @@ When replying in the channel, you can at-mention the person you're directing the
 				}
 
 				// print each command, with aliases on their own line
-				fmt.Fprintf(b, "- `%s`: %s\n", h.Trigger, h.Description)
+				_, _ = fmt.Fprintf(b, "- `%s`: %s\n", h.Trigger, h.Description)
 
 				if len(h.Aliases) > 0 {
 					a := strings.Join(fmtAliases(h.Aliases), ",")
-					fmt.Fprintf(b, "\t- aliases: %s\n", a)
+					_, _ = fmt.Fprintf(b, "\t- aliases: %s\n", a)
 				}
 
-				fmt.Fprintln(b)
+				_, _ = fmt.Fprintln(b)
 			}
 
 			// if we have some prefixed commands, do it again
 			if hasPrefix {
-				fmt.Fprint(b, "\n\nThere are also these special message prefixes:\n\n")
+				_, _ = fmt.Fprint(b, "\n\nThere are also these special message prefixes:\n\n")
 
 				for _, h := range hs {
 					if !h.Prefix {
 						continue
 					}
 
-					fmt.Fprintf(b, "- `%s`: %s\n\n", h.Trigger, h.Description)
+					_, _ = fmt.Fprintf(b, "- `%s`: %s\n\n", h.Trigger, h.Description)
 				}
 			}
 
@@ -175,10 +175,9 @@ When replying in the channel, you can at-mention the person you're directing the
 func injectMessageResponses(ma *handler.MessageActions) {
 	ma.HandleStatic("recommended", "returns a list of recommended blogs or twitter feeds", []string{"recommended blogs"},
 		`Here are some popular blog posts and Twitter accounts you should follow:`,
-		`- Peter Bourgon <https://twitter.com/peterbourgon|@peterbourgon> - <https://peter.bourgon.org/blog>`,
 		`- Carlisia Campos <https://twitter.com/carlisia|@carlisia>`,
-		`- Dave Cheney <https://twitter.com/davecheney|@davecheney> - <http://dave.cheney.net>`,
-		`- Jaana Burcu Dogan <https://twitter.com/rakyll|@rakyll> - <http://golang.rakyll.org>`,
+		`- Dave Cheney <https://twitter.com/davecheney|@davecheney> - <https://dave.cheney.net>`,
+		`- Jaana Burcu Dogan <https://twitter.com/rakyll|@rakyll> - <https://rakyll.org/>`,
 		`- Jessie Frazelle <https://twitter.com/jessfraz|@jessfraz> - <https://blog.jessfraz.com>`,
 		`- William "Bill" Kennedy <https://twitter.com/goinggodotnet|@goinggodotnet> - <https://www.goinggo.net>`,
 		`- Brian Ketelsen <https://twitter.com/bketelsen|@bketelsen> - <https://www.brianketelsen.com/blog>`,
@@ -196,7 +195,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("work with forks", "info on how to work with forks in Go", []string{"working with forks"},
-		`Here's how to work with package forks in Go: <http://blog.sgmansfield.com/2016/06/working-with-forks-in-go/>`,
+		`Here's how to work with package forks in Go: <https://blog.sgmansfield.com/2016/06/working-with-forks-in-go/>`,
 	)
 
 	ma.HandleStatic("block forever", "how to block forever", []string{"how to block forever"},
@@ -227,7 +226,6 @@ func injectMessageResponses(ma *handler.MessageActions) {
 		`These articles will explain how to organize your Go packages:`,
 		`- <https://rakyll.org/style-packages/>`,
 		`- <https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1#.ds38va3pp>`,
-		`- <https://peter.bourgon.org/go-best-practices-2016/#repository-structure>`,
 		`- <https://christine.website/blog/within-go-repo-layout-2020-09-07>`,
 		``,
 		`This article will help you understand the design philosophy for packages: <https://www.goinggo.net/2017/02/design-philosophy-on-packaging.html>`,
@@ -280,7 +278,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 
 	ma.HandleStatic("code of conduct", "info about the code of conduct", []string{"coc"},
 		`We're all expected to follow the GoBridge Code of Conduct, which is itself a superset of the Go Community Code of Conduct. You can find both here:`,
-		`- <http://coc.golangbridge.org>`,
+		`- <https://github.com/gobridge/about-us/blob/master/coc.md>`,
 		`- <https://golang.org/conduct>`,
 		`If you have any questions or concerns please reach out in <#C4U9J9QBT> or email support@gobridge.org.`,
 	)
@@ -364,7 +362,7 @@ Then, you should visit:
 
 There are some awesome websites as well:
  - <https://blog.gopheracademy.com> great resources for Gophers in general
- - <http://gotime.fm> awesome weekly podcast of Go awesomeness
+ - <https://gotime.fm> awesome weekly podcast of Go awesomeness
  - <https://gobyexample.com> examples of how to do things in Go
  - <http://go-database-sql.org> how to use SQL databases in Go
  - <https://dmitri.shuralyov.com/idiomatic-go> tips on how to write more idiomatic Go code
@@ -372,10 +370,8 @@ There are some awesome websites as well:
  - <https://golangbot.com> tutorials to help you get started in Go
  - <https://tutorialedge.net> a collection of articles around various aspects of Go
 
-There's also an exhaustive list of videos <http://gophervids.appspot.com> related to Go from various authors.
-
 If you prefer books, you can try these:
- - <http://www.golangbootcamp.com/book>
+ - <https://www.golangbootcamp.com/book>
  - <http://gopl.io/>
  - <https://www.manning.com/books/go-in-action> (if you e-mail @wkennedy at bill@ardanlabs.com you can get a free copy for being part of this Slack)
 

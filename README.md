@@ -1,50 +1,51 @@
 # gopherbot
 
-This is a rewrite of the [original](https://github.com/gobridge/gopher) Go Slack
-Workspace chat bot. This big difference between that version and this, is that
-`gopherbot` uses the Slack Events API instead of the antiquated RTM (WebSocket)
+This is the Go Slack Workspace bot. It uses the Slack Events API instead of the antiquated RTM (WebSocket)
 API.
 
-This unfortunately results in a more complicated queue-based architecture, that
-results in a more resilient chat bot. As a result of it now being a queue-based
-system, the bot will not respond to any messages more than 30 seconds ago. So if
-Slack experiences an issue preventing us from replying, the message will be
-dropped.
+The bot will not respond to any messages more than 30 seconds ago.
+If Slack experiences an issue preventing it from replying, the message will be dropped.
 
 ## Contributing
+
 ### Adding Responses / Reactions
-Pretty much all responses and reactions should be configured in the
-[cmd/consumer/](https://github.com/gobridge/gopherbot/tree/master/cmd/consumer)
-directory, with each thing being split out by file. How to configure each should
-be fairly straightforward based on existing examples, and the usage of the
-`handler` package is documented via GoDoc if you have any questions.
+
+All responses and reactions should be configured in the
+[cmd/consumer/](https://github.com/gobridge/gopherbot/tree/main/cmd/consumer)
+directory.
+
+Each action should be split out by file.
+
+For examples on how to configure and the use the various parts of the bot,
+check out the [handler](handler) [package documentation](https://pkg.go.dev/github.com/gobridge/gopherbot/handler).
 
 ### Adding Definitions to Glossary
+
 There is also the `define` command that is powered by the `glossary` package. If
-you'd like to add definitions to the glossary, you can [do it
-here](https://github.com/gobridge/gopherbot/blob/master/glossary/terms.go#L5)
+you'd like to add definitions to the glossary, you can [do it here](https://github.com/gobridge/gopherbot/blob/main/glossary/terms.go#L5)
 and raise a PR against this repo.
 
 The glossary is meant to contain common words and terms relevant to the Go
 community. It's not Urban Dictionary.
 
 ## Architecture
+
 ### Slack API
-As mentioned above, the old version used the RTM API for interacting with Slack.
-This is no longer the recommended API to use for building integrations, with
-them now suggesting [The Slack Events API](https://api.slack.com/events-api).
+
+As mentioned above, the bot uses [The Slack Events API](https://api.slack.com/events-api).
 
 It's a HTTP+JSON based subscription model, with strict requirements on message
 acknowledgment times on delivery. Based on that, the best way to accept events
 is to write them to a queue to be processed by workers later so that some slow
-task doesn't violate the contract or introduce the risk of lossy message
-processing.
+task doesn't break the contract or introduce the risk of lossy message processing.
 
 The Events API offers signing of requests, so that you can be confident the
 request originated from Slack.
 
 ### Components
+
 #### Gateway
+
 The job for the gateway is to cryptographically validate the incoming event from
 Slack, confirm that it contains the metadata we expect, and then forward the
 message on to the work queue.
@@ -60,6 +61,7 @@ There is effectively one queue for event type:
 The gateway is stateless and can be scaled horizontally.
 
 #### Consumer
+
 The consumer registers a handler for each of the queues, and those handlers
 process each message internally. They themselves may have sub-handlers that get
 executed, like reacting to messages with emoji versus responding to them.
@@ -70,8 +72,9 @@ update to the workspace join message this is the component that handles those.
 The consumer is stateless and can be scaled horizontally.
 
 #### BGTasks
-The `bgtasks` component is meant to be a place where regular background jobs are
-ran, such as filling data caches, polling for Gerrit (Go CL) merges, or GoTime
+
+The [bgtasks](cmd/bgtasks) component is meant to be a place where regular background
+jobs run, such as filling data caches, polling for Gerrit (Go CL) merges, or GoTime
 shows starting. 
 
 This currently has a channel cache poller, so that consumer handlers can look up
@@ -112,15 +115,18 @@ environment with these environment variables:
 | `HEROKU_SLUG_COMMIT`            | The commit of the code running. This is used in logging, and should be set.                                                                             |
 
 ## Deployment
-The bot is currently running under the GoBridge Heroku organization, and merges
-to master are automatically deployed to the staging version (`@glenda`**. If a
-merge to master seems to have deployed okay automatically, you need to go into
-the Heroku UI and and promote each running app to production.
 
-**Please Note:** Because Bill had requested our repo be a monorepo, our Heroku
-deployment configuration is an operational landmine. When clicking the "Promote
-to Production" button, you need to deselect the unrelated apps so that you don't
-accidentally promote the wrong build to production. For example, if you're
-promoting the gateway component you need to make sure not to promote it to the
-bgtasks or consumer apps. This will break the bot, and require some manual
-action to fix the production deployment.
+The bot is currently running under the GoBridge Heroku organization.
+
+Merges to `main` are automatically deployed to the staging version `@glenda`**.
+If a  merge to `main` was deployed successfully, you need to go into
+the Heroku UI and promote each running app to production.
+
+**Please Note:** When clicking the `Promote to Production` button,
+you need to deselect the unrelated apps so that you don't accidentally
+promote the wrong build to production.
+
+For example, if you're promoting the gateway component you need to make
+sure not to promote it to the `bgtasks` or `consumer` apps.
+This will break the bot, and require some manual action to fix the
+production deployment.
