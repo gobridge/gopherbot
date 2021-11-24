@@ -274,7 +274,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 
 	ma.HandleStatic("playground", "info on sharing Go code via the Go Playground", []string{"go playground", "goplay", "goplay space"},
 		`Please share your code via the Go Playground. The Playground offers a specialized runtime environment, that others can use to read your code, iterate on it, and share it back with you:`,
-		`- <https://play.golang.org/>`,
+		`- <https://go.dev/play/>`,
 		`There is also this stylized alternate front-end: <https://goplay.space/>`,
 	)
 
@@ -286,7 +286,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	)
 
 	ma.HandleStatic("screenshots", "why you shouldn't use screenshots", []string{"screenshot"},
-		`Screenshots are neither easy to read nor very accessible for many people. Please consider copying code, errors, or command output into a Slack snippet, the <https://play.golang.org/|Go Playground>, or a <https://gist.github.com/|GitHub Gist>.`,
+		`Screenshots are neither easy to read nor very accessible for many people. Please consider copying code, errors, or command output into a Slack snippet, the <https://go.dev/play/|Go Playground>, or a <https://gist.github.com/|GitHub Gist>.`,
 	)
 
 	ma.HandleStatic("go tour", "link to the Go tour", []string{"tour"},
