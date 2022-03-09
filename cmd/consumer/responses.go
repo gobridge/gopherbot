@@ -226,7 +226,7 @@ func injectMessageResponses(ma *handler.MessageActions) {
 	ma.HandleStatic("project layout", "guidance on how to structure your Go projects", []string{"project structure", "package layout", "package structure"},
 		`These articles will explain how to organize your Go packages:`,
 		`- <https://rakyll.org/style-packages/>`,
-		`- <https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1#.ds38va3pp>`,
+		`- <https://www.gobeyond.dev/standard-package-layout/>`,
 		`- <https://peter.bourgon.org/go-best-practices-2016/#repository-structure>`,
 		`- <https://christine.website/blog/within-go-repo-layout-2020-09-07>`,
 		``,
