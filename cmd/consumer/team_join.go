@@ -80,7 +80,7 @@ If you'd like to learn more about the functions I offer, please send me the ` + 
 
 There is also a forum <https://forum.golangbridge.org>, which you might want to check it out as well if a Forum is more your style.
 
-<#%s> can sometimes seem busy, but please don't hesitate to ask your Go related questions there. To share code while asking a question, you should use: <https://play.golang.org/> as it makes it easy for others to help you.
+<#%s> can sometimes seem busy, but please don't hesitate to ask your Go related questions there. To share code while asking a question, you should use: <https://go.dev/play/> as it makes it easy for others to help you.
 
 Here's a list of a few other channels you could join:
 %s

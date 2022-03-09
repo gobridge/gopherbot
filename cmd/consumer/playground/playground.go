@@ -74,7 +74,7 @@ func (c *Client) pgForMessage(ctx workqueue.Context, m handler.Messenger, r hand
 
 	err = r.RespondEphemeral(ctx, `I've noticed you've written a large block of text (more than 9 lines). `+
 		`To faciliate collaboration and make the conversation easier to follow, `+
-		`please consider using <https://play.golang.org> to share code. If you wish to not `+
+		`please consider using <https://go.dev/play/> to share code. If you wish to not `+
 		`link against the playground, please start the message with "nolink". Thank you!`,
 	)
 	if err != nil {
@@ -131,7 +131,7 @@ func (c *Client) pgForFiles(ctx workqueue.Context, m handler.Messenger, r handle
 
 	err := r.RespondEphemeral(ctx, `I've noticed you uploaded a Go file. To facilitate collaboration and make `+
 		`it easier for others to share back the snippet, please consider using: `+
-		`<https://play.golang.org>. If you wish to not link against the playground, please use `+
+		`<https://go.dev/play/>. If you wish to not link against the playground, please use `+
 		`"nolink" in the message. Thank you!`,
 	)
 	if err != nil {
@@ -144,7 +144,7 @@ func (c *Client) pgForFiles(ctx workqueue.Context, m handler.Messenger, r handle
 }
 
 func (c *Client) upload(ctx context.Context, body io.Reader) (link string, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://play.golang.org/share", body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://go.dev/_/share", body)
 	if err != nil {
 		return "", err
 	}
@@ -168,7 +168,7 @@ func (c *Client) upload(ctx context.Context, body io.Reader) (link string, err e
 		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return "https://play.golang.org/p/" + string(id), nil
+	return "https://go.dev/play/p/" + string(id), nil
 }
 
 // MessageMatchFn satisfies handler.MessageMatchFn
