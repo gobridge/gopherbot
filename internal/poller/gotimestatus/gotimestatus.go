@@ -13,10 +13,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// timeNow returns the current time
-// it is unexported and overridable to facilitate testing
-var timeNow = time.Now
-
 // Store represents the shape of the storage system.
 type Store interface {
 	Get(ctx context.Context) (id string, notFound bool, err error)
@@ -35,6 +31,10 @@ type GoTimeStatus struct {
 	http         *http.Client
 	notify       NotifyFunc
 	statusMaxAge time.Duration
+
+	// nowFunc is not and should not be exposed as part of the API
+	// this is just to facilitate testing with a static time
+	nowFunc func() time.Time
 
 	lastStatus string
 }
@@ -87,7 +87,7 @@ func (ct *createTime) UnmarshalJSON(bs []byte) error {
 	}
 	t, err := time.Parse("2006-01-02T15:04:05.999Z", str)
 	if err != nil {
-		return nil
+		return err
 	}
 	ct.Time = t
 	return nil
@@ -109,7 +109,7 @@ const (
 // if the last status ID could not be persisted to state storage, and prevents reposts if we lose the last status ID.
 func (gt *GoTimeStatus) Poll(ctx context.Context) error {
 	gt.logger.Trace().Msg("gotime status poll")
-	now := timeNow()
+	now := gt.now()
 	accountStatusURL := gotimeStatusesAPI
 	if gt.lastStatus == "" {
 		gt.logger.Trace().Msg("getting latest status")
@@ -127,18 +127,18 @@ func (gt *GoTimeStatus) Poll(ctx context.Context) error {
 		gt.logger.Trace().Msg("no statuses found")
 		return nil
 	}
+	// Sorts the status in descending order (Latest First)
+	sort.Slice(statuses, func(i, j int) bool {
+		return statuses[i].CreatedAt.Time.After(statuses[j].CreatedAt.Time)
+	})
 	if gt.lastStatus == "" {
 		// no last status, only notify on the latest status
 		// which should be the first element in the list
 		statuses = statuses[0:1]
-	} else {
-		// Sort statuses by age in ascending order
-		sort.Slice(statuses, func(i, j int) bool {
-			return statuses[i].CreatedAt.Time.Before(statuses[j].CreatedAt.Time)
-		})
 	}
-
-	for _, status := range statuses {
+	for i := range statuses {
+		// iterate in reverse order to post statuses in status in correct chronological order
+		status := statuses[len(statuses)-i-1]
 		gt.lastStatus = status.ID
 		age := now.Sub(status.CreatedAt.Time)
 		if age > gt.statusMaxAge { // too old
@@ -160,13 +160,13 @@ func (gt *GoTimeStatus) Poll(ctx context.Context) error {
 func (gt *GoTimeStatus) get(ctx context.Context, url string, i interface{}) error {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	req = req.WithContext(ctx)
 
 	resp, err := gt.http.Do(req)
 	if err != nil {
-		return fmt.Errorf("making http request: %v", err)
+		return fmt.Errorf("making http request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -176,13 +176,20 @@ func (gt *GoTimeStatus) get(ctx context.Context, url string, i interface{}) erro
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("reading response body: %v", err)
+		return fmt.Errorf("reading response body: %w", err)
 	}
 
 	err = json.Unmarshal(body, i)
 	if err != nil {
-		return fmt.Errorf("unmarshaling response: %s", err)
+		return fmt.Errorf("unmarshaling response: %w", err)
 	}
 
 	return nil
+}
+
+func (gt *GoTimeStatus) now() time.Time {
+	if gt.nowFunc == nil {
+		return time.Now()
+	}
+	return gt.nowFunc()
 }

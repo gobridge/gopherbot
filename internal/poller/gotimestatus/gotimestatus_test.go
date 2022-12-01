@@ -12,14 +12,13 @@ import (
 	"time"
 )
 
+const (
+	// staticTestPollTime is used to override the nowFunc so that the filtering logic can be tested with the static responses in testdata
+	// If those files are updated, this time should be modified to a new value relative to the new statuses created_at
+	staticTestPollTime = "2022-11-24T15:20:00Z"
+)
+
 func TestGoTimeStatus_Poll(t *testing.T) {
-	t.Cleanup(func() {
-		timeNow = time.Now
-	})
-	timeNow = func() time.Time {
-		now, _ := time.Parse(time.RFC3339, "2022-11-24T15:20:00Z")
-		return now
-	}
 	zl := zerolog.New(ioutil.Discard)
 	s := make(mockStore)
 	c := &http.Client{
@@ -35,30 +34,30 @@ func TestGoTimeStatus_Poll(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-		return
+		t.Fatalf("error creating GoTimeStatus: %v", err)
+	}
+	staticTime, err := time.Parse(time.RFC3339, staticTestPollTime)
+	if err != nil {
+		t.Fatalf("error parsing static time %s: %v", staticTestPollTime, err)
+	}
+	gts.nowFunc = func() time.Time {
+		return staticTime
 	}
 	if err := gts.Poll(context.Background()); err != nil {
 		t.Fatalf("unexpected poll error: %v", err)
 	}
 	if notifyURL != expectedURL {
-		t.Errorf("status URL: expected %s, got %s", expectedURL, notifyURL)
+		t.Fatalf("status URL: expected %s, got %s", expectedURL, notifyURL)
 	}
 	if gts.lastStatus != expectedStatusID {
-		t.Errorf("lastStatus: expected %s, got %s", expectedStatusID, gts.lastStatus)
+		t.Fatalf("lastStatus: expected %s, got %s", expectedStatusID, gts.lastStatus)
 	}
-	if v, ok := s[redisKey]; !ok || v != expectedStatusID {
-		t.Errorf("store: expected (%s,true), got (%s,%t)", expectedStatusID, v, ok)
+	if v, ok := s["last_id"]; !ok || v != expectedStatusID {
+		t.Fatalf("store: expected (%s,true), got (%s,%t)", expectedStatusID, v, ok)
 	}
 }
 
 func TestGoTimeStatus_Poll_lastID(t *testing.T) {
-	t.Cleanup(func() {
-		timeNow = time.Now
-	})
-	timeNow = func() time.Time {
-		now, _ := time.Parse(time.RFC3339, "2022-11-24T15:20:00Z")
-		return now
-	}
 	zl := zerolog.New(ioutil.Discard)
 	s := make(mockStore)
 	c := &http.Client{
@@ -73,21 +72,28 @@ func TestGoTimeStatus_Poll_lastID(t *testing.T) {
 		notifyURL = statusURL
 		return nil
 	})
-	gts.lastStatus = "109378535144130594" // Set last status to test skipping old messages
 	if err != nil {
-		return
+		t.Fatalf("error creating GoTimeStatus: %v", err)
 	}
+	staticTime, err := time.Parse(time.RFC3339, staticTestPollTime)
+	if err != nil {
+		t.Fatalf("error parsing static time %s: %v", staticTestPollTime, err)
+	}
+	gts.nowFunc = func() time.Time {
+		return staticTime
+	}
+	gts.lastStatus = "109378535144130594" // Set last status to test skipping old messages
 	if err := gts.Poll(context.Background()); err != nil {
 		t.Fatalf("unexpected poll error: %v", err)
 	}
 	if notifyURL != expectedURL {
-		t.Errorf("status URL: expected %s, got %s", expectedURL, notifyURL)
+		t.Fatalf("status URL: expected %s, got %s", expectedURL, notifyURL)
 	}
 	if gts.lastStatus != expectedStatusID {
-		t.Errorf("lastStatus: expected %s, got %s", expectedStatusID, gts.lastStatus)
+		t.Fatalf("lastStatus: expected %s, got %s", expectedStatusID, gts.lastStatus)
 	}
-	if v, ok := s[redisKey]; !ok || v != expectedStatusID {
-		t.Errorf("store: expected (%s,true), got (%s,%t)", expectedStatusID, v, ok)
+	if v, ok := s["last_id"]; !ok || v != expectedStatusID {
+		t.Fatalf("store: expected (%s,true), got (%s,%t)", expectedStatusID, v, ok)
 	}
 }
 

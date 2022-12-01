@@ -59,6 +59,7 @@ func setUpGoTimeStatus(ctx context.Context, shadowMode bool, logger zerolog.Logg
 	w := make(chan struct{})
 
 	go func() {
+		defer close(w)
 		logger.Info().Msg("starting GoTime poller")
 
 		for {
@@ -84,8 +85,6 @@ func setUpGoTimeStatus(ctx context.Context, shadowMode bool, logger zerolog.Logg
 					Msg("polling GoTimeStatus in 5 minutes")
 
 			case <-ctx.Done():
-				defer close(w)
-
 				logger.Info().
 					Err(ctx.Err()).
 					Msg("context canceled: shutting down poller")
