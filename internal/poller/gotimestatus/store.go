@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	redisKey     = "poller:gotime:last_status"
-	redisTestKey = "poller:gotime:test_key"
+	redisKey     = "poller:gotimestatus:last_status"
+	redisTestKey = "poller:gotimestatus:test_key"
 )
 
 // DefaultStore is a default implementation of the Store interface.
