@@ -80,6 +80,11 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 		return err
 	}
 
+	gotimeStatusDone, err := setUpGoTimeStatus(ctx, shadowMode, logger, sc, rc)
+	if err != nil {
+		return err
+	}
+
 	ccDone, err := setUpChannelCacheFiller(ctx, logger, sc, rc)
 	if err != nil {
 		return err
@@ -99,6 +104,7 @@ func runServer(cfg config.C, logger zerolog.Logger) error {
 	logger.Info().Msg("presumably running...")
 	<-gerritDone
 	<-gotimeDone
+	<-gotimeStatusDone
 	<-ccDone
 
 	return nil
