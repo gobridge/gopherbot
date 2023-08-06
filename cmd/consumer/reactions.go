@@ -16,6 +16,9 @@ func injectMessageReactions(r *handler.MessageActions) {
 	r.HandleReaction("ermergerd", "dragon")
 	r.HandleReaction("ermahgerd", "dragon")
 
+	r.HandleReaction("rubberduck", "rubberduck")
+	r.HandleReaction("rubber duck", "rubberduck")
+
 	r.HandleReaction("beer me", "beer", "beers")
 
 	r.HandleMentionedReaction("thank", "gopher")
