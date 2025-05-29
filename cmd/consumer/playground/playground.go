@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -54,6 +55,27 @@ func (c *Client) Handler(ctx workqueue.Context, m handler.Messenger, r handler.R
 }
 
 func (c *Client) pgForMessage(ctx workqueue.Context, m handler.Messenger, r handler.Responder) error {
+	content := m.Text()
+
+	hasCodeBlocks := containsCodeBlocks(content)
+	hasFullInlineCode := containsFullLineInlineCode(content)
+
+	if !hasCodeBlocks && !hasFullInlineCode {
+		err := r.RespondEphemeral(ctx, "I've noticed you've written a large block of text (more than 9 lines). "+
+			"To faciliate collaboration and make the conversation easier to follow, "+
+			"please consider using <https://go.dev/play/> to share code and avoid writing "+
+			"walls of text. No code was detected in your post, you may use triple backticks "+
+			" to start and end a code block: <https://slack.com/help/articles/202288908-Format-your-messages#markup>\n\n"+
+			"Thank you!",
+		)
+		if err != nil {
+			ctx.Logger().Error().
+				Err(err).
+				Msg("failed to respond with ephemeral Go Playground etiquette")
+		}
+
+		return nil
+	}
 
 	link, err := c.upload(ctx, messageToPlayground(m.Text()))
 	if err != nil {
@@ -72,11 +94,20 @@ func (c *Client) pgForMessage(ctx workqueue.Context, m handler.Messenger, r hand
 		return fmt.Errorf("failed to send message with Playground link: %w", err)
 	}
 
-	err = r.RespondEphemeral(ctx, `I've noticed you've written a large block of text (more than 9 lines). `+
-		`To faciliate collaboration and make the conversation easier to follow, `+
-		`please consider using <https://go.dev/play/> to share code. If you wish to not `+
-		`link against the playground, please start the message with "nolink". Thank you!`,
-	)
+	msg = "I've noticed you've written a large block of text (more than 9 lines). " +
+		"To faciliate collaboration and make the conversation easier to follow, " +
+		"please consider using <https://go.dev/play/> to share code. If you wish to not " +
+		"link against the playground, please start the message with \"nolink\".\n\n"
+
+	if hasFullInlineCode {
+		msg += "If you want to post a block of code, it's better to use a code block " +
+			"rather than full-line inline code. Begin and end a code block with triple " +
+			"backticks: <https://slack.com/help/articles/202288908-Format-your-messages#markup>\n\n"
+	}
+
+	msg += "Thank you!"
+
+	err = r.RespondEphemeral(ctx, msg)
 	if err != nil {
 		ctx.Logger().Error().
 			Err(err).
@@ -129,10 +160,11 @@ func (c *Client) pgForFiles(ctx workqueue.Context, m handler.Messenger, r handle
 		}
 	}
 
-	err := r.RespondEphemeral(ctx, `I've noticed you uploaded a Go file. To facilitate collaboration and make `+
-		`it easier for others to share back the snippet, please consider using: `+
-		`<https://go.dev/play/>. If you wish to not link against the playground, please use `+
-		`"nolink" in the message. Thank you!`,
+	err := r.RespondEphemeral(ctx, "I've noticed you uploaded a Go file. To facilitate collaboration and make "+
+		"it easier for others to share back the snippet, please consider using: "+
+		"<https://go.dev/play/>. If you wish to not link against the playground, please use "+
+		"\"nolink\" in the message.\n\n"+
+		"Thank you!",
 	)
 	if err != nil {
 		ctx.Logger().Error().
@@ -206,12 +238,13 @@ func messageToPlayground(text string) *bytes.Buffer {
 
 	// unescape the post to prevent the insertion of HTML escapes into the playground
 	text = html.UnescapeString(text)
+	text = convertFullLineInlineCode(text)
 	parts := strings.Split(text, "```")
 
 	for i, part := range parts {
 		part = strings.Trim(part, "\n")
 
-		if i&1 == 0 {
+		if i%2 == 0 {
 			// it's a comment
 			if strings.TrimSpace(part) == "" {
 				continue
@@ -232,4 +265,19 @@ func messageToPlayground(text string) *bytes.Buffer {
 	}
 
 	return &buf
+}
+
+func containsCodeBlocks(str string) bool {
+	return strings.Contains(str, "```")
+}
+
+// matcher for inline code that spans the whole line. \x60 is a single backtick.
+var matchFullLineInlineCode = regexp.MustCompile(`(?m)^\s*\x60([^\x60]*)\x60\s*$`)
+
+func containsFullLineInlineCode(str string) bool {
+	return matchFullLineInlineCode.MatchString(str)
+}
+
+func convertFullLineInlineCode(str string) string {
+	return matchFullLineInlineCode.ReplaceAllString(str, "```${1}```")
 }
