@@ -8,12 +8,13 @@ import (
 
 // EventsAPIEvent is the base EventsAPIEvent
 type EventsAPIEvent struct {
-	Token      string `json:"token"`
-	TeamID     string `json:"team_id"`
-	Type       string `json:"type"`
-	APIAppID   string `json:"api_app_id"`
-	Data       interface{}
-	InnerEvent EventsAPIInnerEvent
+	Token        string `json:"token"`
+	TeamID       string `json:"team_id"`
+	Type         string `json:"type"`
+	APIAppID     string `json:"api_app_id"`
+	EnterpriseID string `json:"enterprise_id"`
+	Data         interface{}
+	InnerEvent   EventsAPIInnerEvent
 }
 
 // EventsAPIURLVerificationEvent received when configuring a EventsAPI driven app
@@ -30,15 +31,17 @@ type ChallengeResponse struct {
 
 // EventsAPICallbackEvent is the main (outer) EventsAPI event.
 type EventsAPICallbackEvent struct {
-	Type        string           `json:"type"`
-	Token       string           `json:"token"`
-	TeamID      string           `json:"team_id"`
-	APIAppID    string           `json:"api_app_id"`
-	InnerEvent  *json.RawMessage `json:"event"`
-	AuthedUsers []string         `json:"authed_users"`
-	AuthedTeams []string         `json:"authed_teams"`
-	EventID     string           `json:"event_id"`
-	EventTime   int              `json:"event_time"`
+	Type         string           `json:"type"`
+	Token        string           `json:"token"`
+	TeamID       string           `json:"team_id"`
+	APIAppID     string           `json:"api_app_id"`
+	EnterpriseID string           `json:"enterprise_id"`
+	InnerEvent   *json.RawMessage `json:"event"`
+	AuthedUsers  []string         `json:"authed_users"`
+	AuthedTeams  []string         `json:"authed_teams"`
+	EventID      string           `json:"event_id"`
+	EventTime    int              `json:"event_time"`
+	EventContext string           `json:"event_context"`
 }
 
 // EventsAPIAppRateLimited indicates your app's event subscriptions are being rate limited
@@ -59,7 +62,7 @@ const (
 	AppRateLimited = "app_rate_limited"
 )
 
-// EventsAPIEventMap maps OUTTER Event API events to their corresponding struct
+// EventsAPIEventMap maps OUTER Event API events to their corresponding struct
 // implementations. The structs should be instances of the unmarshalling
 // target for the matching event type.
 var EventsAPIEventMap = map[string]interface{}{

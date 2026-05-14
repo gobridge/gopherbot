@@ -3,7 +3,7 @@ package slack
 // ContextBlock defines data that is used to display message context, which can
 // include both images and text.
 //
-// More Information: https://api.slack.com/reference/messaging/blocks#actions
+// More Information: https://api.slack.com/reference/messaging/blocks#context
 type ContextBlock struct {
 	Type            MessageBlockType `json:"type"`
 	BlockID         string           `json:"block_id,omitempty"`
@@ -13,6 +13,11 @@ type ContextBlock struct {
 // BlockType returns the type of the block
 func (s ContextBlock) BlockType() MessageBlockType {
 	return s.Type
+}
+
+// ID returns the ID of the block
+func (s ContextBlock) ID() string {
+	return s.BlockID
 }
 
 type ContextElements struct {

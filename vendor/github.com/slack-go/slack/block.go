@@ -1,27 +1,36 @@
 package slack
 
-// @NOTE: Blocks are in beta and subject to change.
-
-// More Information: https://api.slack.com/block-kit
-
 // MessageBlockType defines a named string type to define each block type
 // as a constant for use within the package.
 type MessageBlockType string
 
 const (
-	MBTSection MessageBlockType = "section"
-	MBTDivider MessageBlockType = "divider"
-	MBTImage   MessageBlockType = "image"
-	MBTAction  MessageBlockType = "actions"
-	MBTContext MessageBlockType = "context"
-	MBTFile    MessageBlockType = "file"
-	MBTInput   MessageBlockType = "input"
+	MBTSection        MessageBlockType = "section"
+	MBTDivider        MessageBlockType = "divider"
+	MBTImage          MessageBlockType = "image"
+	MBTAction         MessageBlockType = "actions"
+	MBTContext        MessageBlockType = "context"
+	MBTContextActions MessageBlockType = "context_actions"
+	MBTFile           MessageBlockType = "file"
+	MBTInput          MessageBlockType = "input"
+	MBTHeader         MessageBlockType = "header"
+	MBTRichText       MessageBlockType = "rich_text"
+	MBTCall           MessageBlockType = "call"
+	MBTVideo          MessageBlockType = "video"
+	MBTMarkdown       MessageBlockType = "markdown"
+	MBTTable          MessageBlockType = "table"
+	MBTTaskCard       MessageBlockType = "task_card"
+	MBTPlan           MessageBlockType = "plan"
+	MBTAlert          MessageBlockType = "alert"
+	MBTCard           MessageBlockType = "card"
+	MBTCarousel       MessageBlockType = "carousel"
 )
 
 // Block defines an interface all block types should implement
 // to ensure consistency between blocks.
 type Block interface {
 	BlockType() MessageBlockType
+	ID() string
 }
 
 // Blocks is a convenience struct defined to allow dynamic unmarshalling of
@@ -32,27 +41,36 @@ type Blocks struct {
 
 // BlockAction is the action callback sent when a block is interacted with
 type BlockAction struct {
-	ActionID             string              `json:"action_id"`
-	BlockID              string              `json:"block_id"`
-	Type                 actionType          `json:"type"`
-	Text                 TextBlockObject     `json:"text"`
-	Value                string              `json:"value"`
-	ActionTs             string              `json:"action_ts"`
-	SelectedOption       OptionBlockObject   `json:"selected_option"`
-	SelectedOptions      []OptionBlockObject `json:"selected_options"`
-	SelectedUser         string              `json:"selected_user"`
-	SelectedChannel      string              `json:"selected_channel"`
-	SelectedConversation string              `json:"selected_conversation"`
-	SelectedDate         string              `json:"selected_date"`
-	InitialOption        OptionBlockObject   `json:"initial_option"`
-	InitialUser          string              `json:"initial_user"`
-	InitialChannel       string              `json:"initial_channel"`
-	InitialConversation  string              `json:"initial_conversation"`
-	InitialDate          string              `json:"initial_date"`
+	ActionID              string              `json:"action_id"`
+	BlockID               string              `json:"block_id"`
+	Type                  ActionType          `json:"type"`
+	Text                  TextBlockObject     `json:"text"`
+	Value                 string              `json:"value"`
+	Files                 []File              `json:"files"`
+	ActionTs              string              `json:"action_ts"`
+	SelectedOption        OptionBlockObject   `json:"selected_option"`
+	SelectedOptions       []OptionBlockObject `json:"selected_options"`
+	SelectedUser          string              `json:"selected_user"`
+	SelectedUsers         []string            `json:"selected_users"`
+	SelectedChannel       string              `json:"selected_channel"`
+	SelectedChannels      []string            `json:"selected_channels"`
+	SelectedConversation  string              `json:"selected_conversation"`
+	SelectedConversations []string            `json:"selected_conversations"`
+	SelectedDate          string              `json:"selected_date"`
+	SelectedTime          string              `json:"selected_time"`
+	SelectedDateTime      int64               `json:"selected_date_time"`
+	Timezone              string              `json:"timezone"`
+	InitialOption         OptionBlockObject   `json:"initial_option"`
+	InitialUser           string              `json:"initial_user"`
+	InitialChannel        string              `json:"initial_channel"`
+	InitialConversation   string              `json:"initial_conversation"`
+	InitialDate           string              `json:"initial_date"`
+	InitialTime           string              `json:"initial_time"`
+	RichTextValue         RichTextBlock       `json:"rich_text_value"`
 }
 
 // actionType returns the type of the action
-func (b BlockAction) actionType() actionType {
+func (b BlockAction) actionType() ActionType {
 	return b.Type
 }
 
