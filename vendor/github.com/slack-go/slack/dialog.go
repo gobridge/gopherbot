@@ -54,7 +54,9 @@ type DialogCallback InteractionCallback
 
 // DialogSubmissionCallback is sent from Slack when a user submits a form from within a dialog
 type DialogSubmissionCallback struct {
-	State      string            `json:"state,omitempty"`
+	// NOTE: State is only used with the dialog_submission type.
+	// You should use InteractionCallback.BlockActionsState for block_actions type.
+	State      string            `json:"-"`
 	Submission map[string]string `json:"submission"`
 }
 
@@ -104,8 +106,7 @@ func (api *Client) OpenDialogContext(ctx context.Context, triggerID string, dial
 	}
 
 	response := &DialogOpenResponse{}
-	endpoint := api.endpoint + "dialog.open"
-	if err := postJSON(ctx, api.httpclient, endpoint, api.token, encoded, response, api); err != nil {
+	if err := api.postJSONMethod(ctx, "dialog.open", api.token, encoded, response); err != nil {
 		return err
 	}
 

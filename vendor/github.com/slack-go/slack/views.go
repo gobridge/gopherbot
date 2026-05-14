@@ -18,28 +18,37 @@ type ViewState struct {
 
 type View struct {
 	SlackResponse
-	ID              string           `json:"id"`
-	TeamID          string           `json:"team_id"`
-	Type            ViewType         `json:"type"`
-	Title           *TextBlockObject `json:"title"`
-	Close           *TextBlockObject `json:"close"`
-	Submit          *TextBlockObject `json:"submit"`
-	Blocks          Blocks           `json:"blocks"`
-	PrivateMetadata string           `json:"private_metadata"`
-	CallbackID      string           `json:"callback_id"`
-	State           *ViewState       `json:"state"`
-	Hash            string           `json:"hash"`
-	ClearOnClose    bool             `json:"clear_on_close"`
-	NotifyOnClose   bool             `json:"notify_on_close"`
-	RootViewID      string           `json:"root_view_id"`
-	PreviousViewID  string           `json:"previous_view_id"`
-	AppID           string           `json:"app_id"`
-	ExternalID      string           `json:"external_id"`
-	BotID           string           `json:"bot_id"`
+	ID                 string           `json:"id"`
+	TeamID             string           `json:"team_id"`
+	Type               ViewType         `json:"type"`
+	Title              *TextBlockObject `json:"title"`
+	Close              *TextBlockObject `json:"close"`
+	Submit             *TextBlockObject `json:"submit"`
+	Blocks             Blocks           `json:"blocks"`
+	PrivateMetadata    string           `json:"private_metadata"`
+	CallbackID         string           `json:"callback_id"`
+	State              *ViewState       `json:"state"`
+	Hash               string           `json:"hash"`
+	ClearOnClose       bool             `json:"clear_on_close"`
+	NotifyOnClose      bool             `json:"notify_on_close"`
+	RootViewID         string           `json:"root_view_id"`
+	PreviousViewID     string           `json:"previous_view_id"`
+	AppID              string           `json:"app_id"`
+	ExternalID         string           `json:"external_id"`
+	BotID              string           `json:"bot_id"`
+	AppInstalledTeamID string           `json:"app_installed_team_id"`
+}
+
+type ViewSubmissionCallbackResponseURL struct {
+	BlockID     string `json:"block_id"`
+	ActionID    string `json:"action_id"`
+	ChannelID   string `json:"channel_id"`
+	ResponseURL string `json:"response_url"`
 }
 
 type ViewSubmissionCallback struct {
-	Hash string `json:"hash"`
+	Hash         string                              `json:"hash"`
+	ResponseURLs []ViewSubmissionCallbackResponseURL `json:"response_urls,omitempty"`
 }
 
 type ViewClosedCallback struct {
@@ -61,12 +70,30 @@ type ViewSubmissionResponse struct {
 	Errors         map[string]string  `json:"errors,omitempty"`
 }
 
+// NewClearViewSubmissionResponse closes all open modals in the current stack.
+//
+// For HTTP-based apps, marshal this to JSON and write it as the HTTP response
+// body. The response is not sent until the handler returns, so start any slow
+// work in a goroutine and return promptly.
+//
+// For Socket Mode apps, pass this as the payload argument to Ack().
+//
+// See https://docs.slack.dev/surfaces/modals#closing_views
 func NewClearViewSubmissionResponse() *ViewSubmissionResponse {
 	return &ViewSubmissionResponse{
 		ResponseAction: RAClear,
 	}
 }
 
+// NewUpdateViewSubmissionResponse replaces the current modal with a new view.
+//
+// For HTTP-based apps, marshal this to JSON and write it as the HTTP response
+// body. The response is not sent until the handler returns, so start any slow
+// work in a goroutine and return promptly.
+//
+// For Socket Mode apps, pass this as the payload argument to Ack().
+//
+// See https://docs.slack.dev/surfaces/modals#updating_views
 func NewUpdateViewSubmissionResponse(view *ModalViewRequest) *ViewSubmissionResponse {
 	return &ViewSubmissionResponse{
 		ResponseAction: RAUpdate,
@@ -74,6 +101,15 @@ func NewUpdateViewSubmissionResponse(view *ModalViewRequest) *ViewSubmissionResp
 	}
 }
 
+// NewPushViewSubmissionResponse pushes a new view onto the modal stack.
+//
+// For HTTP-based apps, marshal this to JSON and write it as the HTTP response
+// body. The response is not sent until the handler returns, so start any slow
+// work in a goroutine and return promptly.
+//
+// For Socket Mode apps, pass this as the payload argument to Ack().
+//
+// See https://docs.slack.dev/surfaces/modals#pushing_views
 func NewPushViewSubmissionResponse(view *ModalViewRequest) *ViewSubmissionResponse {
 	return &ViewSubmissionResponse{
 		ResponseAction: RAPush,
@@ -81,6 +117,19 @@ func NewPushViewSubmissionResponse(view *ModalViewRequest) *ViewSubmissionRespon
 	}
 }
 
+// NewErrorsViewSubmissionResponse displays validation errors on form fields.
+//
+// The errors map keys must be the BlockID of an InputBlock in the view. Keys
+// that reference other block types (e.g. SectionBlock) are silently ignored
+// by Slack, which shows a generic "trouble connecting" error instead.
+//
+// For HTTP-based apps, marshal this to JSON and write it as the HTTP response
+// body. The response is not sent until the handler returns, so start any slow
+// work in a goroutine and return promptly.
+//
+// For Socket Mode apps, pass this as the payload argument to Ack().
+//
+// See https://docs.slack.dev/surfaces/modals/#displaying_errors
 func NewErrorsViewSubmissionResponse(errors map[string]string) *ViewSubmissionResponse {
 	return &ViewSubmissionResponse{
 		ResponseAction: RAErrors,
@@ -90,7 +139,7 @@ func NewErrorsViewSubmissionResponse(errors map[string]string) *ViewSubmissionRe
 
 type ModalViewRequest struct {
 	Type            ViewType         `json:"type"`
-	Title           *TextBlockObject `json:"title"`
+	Title           *TextBlockObject `json:"title,omitempty"`
 	Blocks          Blocks           `json:"blocks"`
 	Close           *TextBlockObject `json:"close,omitempty"`
 	Submit          *TextBlockObject `json:"submit,omitempty"`
@@ -99,6 +148,12 @@ type ModalViewRequest struct {
 	ClearOnClose    bool             `json:"clear_on_close,omitempty"`
 	NotifyOnClose   bool             `json:"notify_on_close,omitempty"`
 	ExternalID      string           `json:"external_id,omitempty"`
+}
+
+type PublishViewContextRequest struct {
+	UserID string             `json:"user_id"`
+	View   HomeTabViewRequest `json:"view"`
+	Hash   *string            `json:"hash,omitempty"`
 }
 
 func (v *ModalViewRequest) ViewType() ViewType {
@@ -122,12 +177,6 @@ type openViewRequest struct {
 	View      ModalViewRequest `json:"view"`
 }
 
-type publishViewRequest struct {
-	UserID string             `json:"user_id"`
-	View   HomeTabViewRequest `json:"view"`
-	Hash   string             `json:"hash,omitempty"`
-}
-
 type pushViewRequest struct {
 	TriggerID string           `json:"trigger_id"`
 	View      ModalViewRequest `json:"view"`
@@ -146,11 +195,33 @@ type ViewResponse struct {
 }
 
 // OpenView opens a view for a user.
+// For more information see the OpenViewContext documentation.
 func (api *Client) OpenView(triggerID string, view ModalViewRequest) (*ViewResponse, error) {
 	return api.OpenViewContext(context.Background(), triggerID, view)
 }
 
+// ValidateUniqueBlockID will verify if each input block has a unique block ID if set
+func ValidateUniqueBlockID(view ModalViewRequest) bool {
+
+	uniqueBlockID := map[string]bool{}
+
+	for _, b := range view.Blocks.BlockSet {
+		if inputBlock, ok := b.(*InputBlock); ok {
+			if inputBlock.BlockID == "" {
+				continue
+			}
+			if _, ok := uniqueBlockID[inputBlock.BlockID]; ok {
+				return false
+			}
+			uniqueBlockID[inputBlock.BlockID] = true
+		}
+	}
+
+	return true
+}
+
 // OpenViewContext opens a view for a user with a custom context.
+// Slack API docs: https://docs.slack.dev/reference/methods/views.open
 func (api *Client) OpenViewContext(
 	ctx context.Context,
 	triggerID string,
@@ -159,6 +230,11 @@ func (api *Client) OpenViewContext(
 	if triggerID == "" {
 		return nil, ErrParametersMissing
 	}
+
+	if !ValidateUniqueBlockID(view) {
+		return nil, ErrBlockIDNotUnique
+	}
+
 	req := openViewRequest{
 		TriggerID: triggerID,
 		View:      view,
@@ -167,9 +243,8 @@ func (api *Client) OpenViewContext(
 	if err != nil {
 		return nil, err
 	}
-	endpoint := api.endpoint + "views.open"
 	resp := &ViewResponse{}
-	err = postJSON(ctx, api.httpclient, endpoint, api.token, encoded, resp, api)
+	err = api.postJSONMethod(ctx, "views.open", api.token, encoded, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -177,32 +252,30 @@ func (api *Client) OpenViewContext(
 }
 
 // PublishView publishes a static view for a user.
+// For more information see the PublishViewContext documentation.
 func (api *Client) PublishView(userID string, view HomeTabViewRequest, hash string) (*ViewResponse, error) {
-	return api.PublishViewContext(context.Background(), userID, view, hash)
+	var hashPtr *string
+	if hash != "" {
+		hashPtr = &hash
+	}
+	return api.PublishViewContext(context.Background(), PublishViewContextRequest{UserID: userID, View: view, Hash: hashPtr})
 }
 
 // PublishViewContext publishes a static view for a user with a custom context.
+// Slack API docs: https://docs.slack.dev/reference/methods/views.publish
 func (api *Client) PublishViewContext(
 	ctx context.Context,
-	userID string,
-	view HomeTabViewRequest,
-	hash string,
+	req PublishViewContextRequest,
 ) (*ViewResponse, error) {
-	if userID == "" {
+	if req.UserID == "" {
 		return nil, ErrParametersMissing
-	}
-	req := publishViewRequest{
-		UserID: userID,
-		View:   view,
-		Hash:   hash,
 	}
 	encoded, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-	endpoint := api.endpoint + "views.publish"
 	resp := &ViewResponse{}
-	err = postJSON(ctx, api.httpclient, endpoint, api.token, encoded, resp, api)
+	err = api.postJSONMethod(ctx, "views.publish", api.token, encoded, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -210,11 +283,13 @@ func (api *Client) PublishViewContext(
 }
 
 // PushView pushes a view onto the stack of a root view.
+// For more information see the PushViewContext documentation.
 func (api *Client) PushView(triggerID string, view ModalViewRequest) (*ViewResponse, error) {
 	return api.PushViewContext(context.Background(), triggerID, view)
 }
 
-// PublishViewContext pushes a view onto the stack of a root view with a custom context.
+// PushViewContext pushes a view onto the stack of a root view with a custom context.
+// Slack API docs: https://docs.slack.dev/reference/methods/views.push
 func (api *Client) PushViewContext(
 	ctx context.Context,
 	triggerID string,
@@ -231,9 +306,8 @@ func (api *Client) PushViewContext(
 	if err != nil {
 		return nil, err
 	}
-	endpoint := api.endpoint + "views.push"
 	resp := &ViewResponse{}
-	err = postJSON(ctx, api.httpclient, endpoint, api.token, encoded, resp, api)
+	err = api.postJSONMethod(ctx, "views.push", api.token, encoded, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -241,11 +315,13 @@ func (api *Client) PushViewContext(
 }
 
 // UpdateView updates an existing view.
+// For more information see the UpdateViewContext documentation.
 func (api *Client) UpdateView(view ModalViewRequest, externalID, hash, viewID string) (*ViewResponse, error) {
 	return api.UpdateViewContext(context.Background(), view, externalID, hash, viewID)
 }
 
 // UpdateViewContext updates an existing view with a custom context.
+// Slack API docs: https://docs.slack.dev/reference/methods/views.update
 func (api *Client) UpdateViewContext(
 	ctx context.Context,
 	view ModalViewRequest,
@@ -265,9 +341,8 @@ func (api *Client) UpdateViewContext(
 	if err != nil {
 		return nil, err
 	}
-	endpoint := api.endpoint + "views.update"
 	resp := &ViewResponse{}
-	err = postJSON(ctx, api.httpclient, endpoint, api.token, encoded, resp, api)
+	err = api.postJSONMethod(ctx, "views.update", api.token, encoded, resp)
 	if err != nil {
 		return nil, err
 	}

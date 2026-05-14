@@ -2,6 +2,7 @@ package slack
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 // Block Objects are also known as Composition Objects
@@ -10,7 +11,6 @@ import (
 
 // BlockObject defines an interface that all block object types should
 // implement.
-// @TODO: Is this interface needed?
 
 // blockObject object types
 const (
@@ -121,7 +121,7 @@ func unmarshalBlockObject(r json.RawMessage, object blockObject) (blockObject, e
 type TextBlockObject struct {
 	Type     string `json:"type"`
 	Text     string `json:"text"`
-	Emoji    bool   `json:"emoji,omitempty"`
+	Emoji    *bool  `json:"emoji,omitempty"`
 	Verbatim bool   `json:"verbatim,omitempty"`
 }
 
@@ -135,19 +135,59 @@ func (s TextBlockObject) MixedElementType() MixedElementType {
 	return MixedElementText
 }
 
+// Validate checks if TextBlockObject has valid values
+func (s TextBlockObject) Validate() error {
+	if s.Type != "plain_text" && s.Type != "mrkdwn" {
+		return errors.New("type must be either of plain_text or mrkdwn")
+	}
+
+	if s.Type == "mrkdwn" && s.Emoji != nil {
+		return errors.New("emoji cannot be set for mrkdwn type")
+	}
+
+	// https://api.slack.com/reference/block-kit/composition-objects#text__fields
+	if len(s.Text) == 0 {
+		return errors.New("text must have a minimum length of 1")
+	}
+
+	// https://api.slack.com/reference/block-kit/composition-objects#text__fields
+	if len(s.Text) > 3000 {
+		return errors.New("text cannot be longer than 3000 characters")
+	}
+
+	return nil
+}
+
 // NewTextBlockObject returns an instance of a new Text Block Object
-func NewTextBlockObject(elementType, text string, emoji, verbatim bool) *TextBlockObject {
+//
+// If you want to create a mrkdwn object, you should set the emoji parameter to false. The
+// reason is that Slack doesn't accept emoji in mrkdwn.
+func NewTextBlockObject(elementType, text string, emoji bool, verbatim bool) *TextBlockObject {
+	// If we're trying to build a mrkdwn object, we can't send emoji at all. I think the
+	// right approach here is to be a bit clever, and not break the function interface.
+	//
+	// So, here's the plan:
+	// 1. If the type is mrkdwn, set emoji to nil, regardless of what the user passed in
+	// 2. Else, set emoji to the value passed in
+	var emojiPtr *bool
+
+	if elementType == "mrkdwn" {
+		emojiPtr = nil
+	} else {
+		emojiPtr = &emoji
+	}
+
 	return &TextBlockObject{
 		Type:     elementType,
 		Text:     text,
-		Emoji:    emoji,
+		Emoji:    emojiPtr,
 		Verbatim: verbatim,
 	}
 }
 
 // BlockType returns the type of the block
 func (t TextBlockObject) BlockType() MessageBlockType {
-	if t.Type == "mrkdown" {
+	if t.Type == "mrkdwn" {
 		return MarkdownType
 	}
 	return PlainTextType
@@ -162,12 +202,19 @@ type ConfirmationBlockObject struct {
 	Title   *TextBlockObject `json:"title"`
 	Text    *TextBlockObject `json:"text"`
 	Confirm *TextBlockObject `json:"confirm"`
-	Deny    *TextBlockObject `json:"deny"`
+	Deny    *TextBlockObject `json:"deny,omitempty"`
+	Style   Style            `json:"style,omitempty"`
 }
 
 // validateType enforces block objects for element and block parameters
 func (s ConfirmationBlockObject) validateType() MessageObjectType {
 	return motConfirmation
+}
+
+// WithStyle add styling to confirmation object
+func (s *ConfirmationBlockObject) WithStyle(style Style) *ConfirmationBlockObject {
+	s.Style = style
+	return s
 }
 
 // NewConfirmationBlockObject returns an instance of a new Confirmation Block Object
@@ -184,16 +231,18 @@ func NewConfirmationBlockObject(title, text, confirm, deny *TextBlockObject) *Co
 //
 // More Information: https://api.slack.com/reference/messaging/composition-objects#option
 type OptionBlockObject struct {
-	Text  *TextBlockObject `json:"text"`
-	Value string           `json:"value"`
-	URL   string           `json:"url,omitempty"`
+	Text        *TextBlockObject `json:"text"`
+	Value       string           `json:"value"`
+	Description *TextBlockObject `json:"description,omitempty"`
+	URL         string           `json:"url,omitempty"`
 }
 
 // NewOptionBlockObject returns an instance of a new Option Block Element
-func NewOptionBlockObject(value string, text *TextBlockObject) *OptionBlockObject {
+func NewOptionBlockObject(value string, text, description *TextBlockObject) *OptionBlockObject {
 	return &OptionBlockObject{
-		Text:  text,
-		Value: value,
+		Text:        text,
+		Value:       value,
+		Description: description,
 	}
 }
 

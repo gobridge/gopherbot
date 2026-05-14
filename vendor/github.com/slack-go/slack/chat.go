@@ -1,10 +1,13 @@
 package slack
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 
 	"github.com/slack-go/slack/slackutilsx"
@@ -27,14 +30,14 @@ const (
 
 type chatResponseFull struct {
 	Channel            string `json:"channel"`
-	Timestamp          string `json:"ts"`                             //Regular message timestamp
-	MessageTimeStamp   string `json:"message_ts"`                     //Ephemeral message timestamp
-	ScheduledMessageID string `json:"scheduled_message_id,omitempty"` //Scheduled message id
+	Timestamp          string `json:"ts"`                             // Regular message timestamp
+	MessageTimeStamp   string `json:"message_ts"`                     // Ephemeral message timestamp
+	ScheduledMessageID string `json:"scheduled_message_id,omitempty"` // Scheduled message id
 	Text               string `json:"text"`
 	SlackResponse
 }
 
-// getMessageTimestamp will inspect the `chatResponseFull` to ruturn a timestamp value
+// getMessageTimestamp will inspect the `chatResponseFull` to return a timestamp value
 // in `chat.postMessage` its under `ts`
 // in `chat.postEphemeral` its under `message_ts`
 func (c chatResponseFull) getMessageTimestamp() string {
@@ -62,6 +65,12 @@ type PostMessageParameters struct {
 	// chat.postEphemeral support
 	Channel string `json:"channel"`
 	User    string `json:"user"`
+
+	// chat metadata support
+	MetaData SlackMetadata `json:"metadata"`
+
+	// file_ids support
+	FileIDs []string `json:"file_ids,omitempty"`
 }
 
 // NewPostMessageParameters provides an instance of PostMessageParameters with all the sane default values set
@@ -82,17 +91,14 @@ func NewPostMessageParameters() PostMessageParameters {
 	}
 }
 
-// DeleteMessage deletes a message in a channel
+// DeleteMessage deletes a message in a channel.
+// For more details, see DeleteMessageContext documentation.
 func (api *Client) DeleteMessage(channel, messageTimestamp string) (string, string, error) {
-	respChannel, respTimestamp, _, err := api.SendMessageContext(
-		context.Background(),
-		channel,
-		MsgOptionDelete(messageTimestamp),
-	)
-	return respChannel, respTimestamp, err
+	return api.DeleteMessageContext(context.Background(), channel, messageTimestamp)
 }
 
-// DeleteMessageContext deletes a message in a channel with a custom context
+// DeleteMessageContext deletes a message in a channel with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.delete
 func (api *Client) DeleteMessageContext(ctx context.Context, channel, messageTimestamp string) (string, string, error) {
 	respChannel, respTimestamp, _, err := api.SendMessageContext(
 		ctx,
@@ -105,31 +111,33 @@ func (api *Client) DeleteMessageContext(ctx context.Context, channel, messageTim
 // ScheduleMessage sends a message to a channel.
 // Message is escaped by default according to https://api.slack.com/docs/formatting
 // Use http://davestevens.github.io/slack-message-builder/ to help crafting your message.
+// For more details, see ScheduleMessageContext documentation.
 func (api *Client) ScheduleMessage(channelID, postAt string, options ...MsgOption) (string, string, error) {
-	respChannel, respTimestamp, _, err := api.SendMessageContext(
-		context.Background(),
+	return api.ScheduleMessageContext(context.Background(), channelID, postAt, options...)
+}
+
+// ScheduleMessageContext sends a message to a channel with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.scheduleMessage
+func (api *Client) ScheduleMessageContext(ctx context.Context, channelID, postAt string, options ...MsgOption) (string, string, error) {
+	respChannel, scheduledMessageID, _, err := api.SendMessageContext(
+		ctx,
 		channelID,
 		MsgOptionSchedule(postAt),
 		MsgOptionCompose(options...),
 	)
-	return respChannel, respTimestamp, err
+	return respChannel, scheduledMessageID, err
 }
 
 // PostMessage sends a message to a channel.
 // Message is escaped by default according to https://api.slack.com/docs/formatting
 // Use http://davestevens.github.io/slack-message-builder/ to help crafting your message.
+// For more details, see PostMessageContext documentation.
 func (api *Client) PostMessage(channelID string, options ...MsgOption) (string, string, error) {
-	respChannel, respTimestamp, _, err := api.SendMessageContext(
-		context.Background(),
-		channelID,
-		MsgOptionPost(),
-		MsgOptionCompose(options...),
-	)
-	return respChannel, respTimestamp, err
+	return api.PostMessageContext(context.Background(), channelID, options...)
 }
 
-// PostMessageContext sends a message to a channel with a custom context
-// For more details, see PostMessage documentation.
+// PostMessageContext sends a message to a channel with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.postMessage
 func (api *Client) PostMessageContext(ctx context.Context, channelID string, options ...MsgOption) (string, string, error) {
 	respChannel, respTimestamp, _, err := api.SendMessageContext(
 		ctx,
@@ -143,17 +151,13 @@ func (api *Client) PostMessageContext(ctx context.Context, channelID string, opt
 // PostEphemeral sends an ephemeral message to a user in a channel.
 // Message is escaped by default according to https://api.slack.com/docs/formatting
 // Use http://davestevens.github.io/slack-message-builder/ to help crafting your message.
+// For more details, see PostEphemeralContext documentation.
 func (api *Client) PostEphemeral(channelID, userID string, options ...MsgOption) (string, error) {
-	return api.PostEphemeralContext(
-		context.Background(),
-		channelID,
-		userID,
-		options...,
-	)
+	return api.PostEphemeralContext(context.Background(), channelID, userID, options...)
 }
 
-// PostEphemeralContext sends an ephemeal message to a user in a channel with a custom context
-// For more details, see PostEphemeral documentation
+// PostEphemeralContext sends an ephemeral message to a user in a channel with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.postEphemeral
 func (api *Client) PostEphemeralContext(ctx context.Context, channelID, userID string, options ...MsgOption) (timestamp string, err error) {
 	_, timestamp, _, err = api.SendMessageContext(
 		ctx,
@@ -164,17 +168,14 @@ func (api *Client) PostEphemeralContext(ctx context.Context, channelID, userID s
 	return timestamp, err
 }
 
-// UpdateMessage updates a message in a channel
+// UpdateMessage updates a message in a channel.
+// For more details, see UpdateMessageContext documentation.
 func (api *Client) UpdateMessage(channelID, timestamp string, options ...MsgOption) (string, string, string, error) {
-	return api.SendMessageContext(
-		context.Background(),
-		channelID,
-		MsgOptionUpdate(timestamp),
-		MsgOptionCompose(options...),
-	)
+	return api.UpdateMessageContext(context.Background(), channelID, timestamp, options...)
 }
 
-// UpdateMessageContext updates a message in a channel
+// UpdateMessageContext updates a message in a channel with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.update
 func (api *Client) UpdateMessageContext(ctx context.Context, channelID, timestamp string, options ...MsgOption) (string, string, string, error) {
 	return api.SendMessageContext(
 		ctx,
@@ -184,33 +185,108 @@ func (api *Client) UpdateMessageContext(ctx context.Context, channelID, timestam
 	)
 }
 
-// UnfurlMessage unfurls a message in a channel
+// UnfurlMessage unfurls a message in a channel.
+// For more details, see UnfurlMessageContext documentation.
 func (api *Client) UnfurlMessage(channelID, timestamp string, unfurls map[string]Attachment, options ...MsgOption) (string, string, string, error) {
-	return api.SendMessageContext(context.Background(), channelID, MsgOptionUnfurl(timestamp, unfurls), MsgOptionCompose(options...))
+	return api.UnfurlMessageContext(context.Background(), channelID, timestamp, unfurls, options...)
+}
+
+// UnfurlMessageContext unfurls a message in a channel with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.unfurl
+func (api *Client) UnfurlMessageContext(ctx context.Context, channelID, timestamp string, unfurls map[string]Attachment, options ...MsgOption) (string, string, string, error) {
+	return api.SendMessageContext(ctx, channelID, MsgOptionUnfurl(timestamp, unfurls), MsgOptionCompose(options...))
+}
+
+// UnfurlMessageWithAuthURL sends an unfurl request containing an authentication URL.
+// For more details, see UnfurlMessageWithAuthURLContext documentation.
+func (api *Client) UnfurlMessageWithAuthURL(channelID, timestamp string, userAuthURL string, options ...MsgOption) (string, string, string, error) {
+	return api.UnfurlMessageWithAuthURLContext(context.Background(), channelID, timestamp, userAuthURL, options...)
+}
+
+// UnfurlMessageWithAuthURLContext sends an unfurl request containing an authentication URL with a custom context.
+// For more details see: https://api.slack.com/reference/messaging/link-unfurling#authenticated_unfurls
+func (api *Client) UnfurlMessageWithAuthURLContext(ctx context.Context, channelID, timestamp string, userAuthURL string, options ...MsgOption) (string, string, string, error) {
+	return api.SendMessageContext(ctx, channelID, MsgOptionUnfurlAuthURL(timestamp, userAuthURL), MsgOptionCompose(options...))
+}
+
+// UnfurlMessageWorkObject unfurls a message with Work Objects metadata.
+// For more details, see UnfurlMessageWorkObjectContext documentation.
+func (api *Client) UnfurlMessageWorkObject(channelID, timestamp string, unfurls map[string]Attachment, metadata WorkObjectMetadata, options ...MsgOption) (string, string, string, error) {
+	return api.UnfurlMessageWorkObjectContext(context.Background(), channelID, timestamp, unfurls, metadata, options...)
+}
+
+// UnfurlMessageWorkObjectContext unfurls a message with Work Objects metadata with a custom context.
+// This enables rich Work Object previews as described in https://docs.slack.dev/messaging/work-objects/
+// unfurls may be nil to send only Work Object metadata (no legacy attachment unfurls).
+func (api *Client) UnfurlMessageWorkObjectContext(ctx context.Context, channelID, timestamp string, unfurls map[string]Attachment, metadata WorkObjectMetadata, options ...MsgOption) (string, string, string, error) {
+	return api.SendMessageContext(ctx, channelID, MsgOptionUnfurlWorkObject(timestamp, unfurls, metadata), MsgOptionCompose(options...))
+}
+
+// UnfurlMessageByID unfurls a link in the message composer using unfurl_id and source.
+// Use this when Slack sends link_shared with unfurl_id (e.g. before the message is posted).
+// For more details, see UnfurlMessageByIDContext documentation.
+func (api *Client) UnfurlMessageByID(unfurlID, source string, unfurls map[string]Attachment, options ...MsgOption) (string, string, string, error) {
+	return api.UnfurlMessageByIDContext(context.Background(), unfurlID, source, unfurls, options...)
+}
+
+// UnfurlMessageByIDContext unfurls by unfurl_id and source with a custom context.
+// Both unfurl_id and source must be provided together (alternative to channel + ts).
+// Slack API docs: https://api.slack.com/methods/chat.unfurl
+func (api *Client) UnfurlMessageByIDContext(ctx context.Context, unfurlID, source string, unfurls map[string]Attachment, options ...MsgOption) (string, string, string, error) {
+	return api.SendMessageContext(ctx, "", MsgOptionUnfurlByID(unfurlID, source, unfurls), MsgOptionCompose(options...))
 }
 
 // SendMessage more flexible method for configuring messages.
+// For more details, see SendMessageContext documentation.
 func (api *Client) SendMessage(channel string, options ...MsgOption) (string, string, string, error) {
 	return api.SendMessageContext(context.Background(), channel, options...)
 }
 
 // SendMessageContext more flexible method for configuring messages with a custom context.
-func (api *Client) SendMessageContext(ctx context.Context, channelID string, options ...MsgOption) (_channel string, _timestamp string, _text string, err error) {
+// Slack API docs: https://api.slack.com/methods/chat.postMessage
+func (api *Client) SendMessageContext(ctx context.Context, channelID string, options ...MsgOption) (_channel string, _timestampOrScheduledMessageID string, _text string, err error) {
 	var (
 		req      *http.Request
 		parser   func(*chatResponseFull) responseParser
 		response chatResponseFull
 	)
 
-	if req, parser, err = buildSender(api.endpoint, options...).BuildRequest(api.token, channelID); err != nil {
+	if req, parser, err = buildSender(api.endpoint, options...).BuildRequestContext(ctx, api.token, channelID); err != nil {
 		return "", "", "", err
 	}
 
-	if err = doPost(ctx, api.httpclient, req, parser(&response), api); err != nil {
+	if api.Debug() {
+		reqBody, err := io.ReadAll(req.Body)
+		if err != nil {
+			return "", "", "", err
+		}
+		req.Body = io.NopCloser(bytes.NewBuffer(reqBody))
+		api.Debugf("Sending request: %s", redactToken(reqBody))
+	}
+
+	if _, err = doPost(api.httpclient, req, parser(&response), api); err != nil {
 		return "", "", "", err
 	}
 
-	return response.Channel, response.getMessageTimestamp(), response.Text, response.Err()
+	if response.ScheduledMessageID != "" {
+		return response.Channel, response.ScheduledMessageID, response.Text, response.Err()
+	} else {
+		return response.Channel, response.getMessageTimestamp(), response.Text, response.Err()
+	}
+}
+
+func redactToken(b []byte) []byte {
+	// See https://api.slack.com/authentication/token-types
+	// and https://api.slack.com/authentication/rotation
+	re, err := regexp.Compile(`(token=x[a-z.]+)-[0-9A-Za-z-]+`)
+	if err != nil {
+		// The regular expression above should never result in errors,
+		// but just in case, do no harm.
+		return b
+	}
+	// Keep "token=" and the first element of the token, which identifies its type
+	// (this could be useful for debugging, e.g. when using a wrong token).
+	return re.ReplaceAll(b, []byte("$1-REDACTED"))
 }
 
 // UnsafeApplyMsgOptions utility function for debugging/testing chat requests.
@@ -258,6 +334,9 @@ const (
 	chatResponse        sendMode = "chat.responseURL"
 	chatMeMessage       sendMode = "chat.meMessage"
 	chatUnfurl          sendMode = "chat.unfurl"
+	chatStartStream     sendMode = "chat.startStream"
+	chatAppendStream    sendMode = "chat.appendStream"
+	chatStopStream      sendMode = "chat.stopStream"
 )
 
 type sendConfig struct {
@@ -267,6 +346,7 @@ type sendConfig struct {
 	endpoint        string
 	values          url.Values
 	attachments     []Attachment
+	metadata        SlackMetadata
 	blocks          Blocks
 	responseType    string
 	replaceOriginal bool
@@ -274,6 +354,10 @@ type sendConfig struct {
 }
 
 func (t sendConfig) BuildRequest(token, channelID string) (req *http.Request, _ func(*chatResponseFull) responseParser, err error) {
+	return t.BuildRequestContext(context.Background(), token, channelID)
+}
+
+func (t sendConfig) BuildRequestContext(ctx context.Context, token, channelID string) (req *http.Request, _ func(*chatResponseFull) responseParser, err error) {
 	if t, err = applyMsgOptions(token, channelID, t.apiurl, t.options...); err != nil {
 		return nil, nil, err
 	}
@@ -284,23 +368,46 @@ func (t sendConfig) BuildRequest(token, channelID string) (req *http.Request, _ 
 			endpoint:        t.endpoint,
 			values:          t.values,
 			attachments:     t.attachments,
+			metadata:        t.metadata,
 			blocks:          t.blocks,
 			responseType:    t.responseType,
 			replaceOriginal: t.replaceOriginal,
 			deleteOriginal:  t.deleteOriginal,
-		}.BuildRequest()
+		}.BuildRequestContext(ctx)
 	default:
-		return formSender{endpoint: t.endpoint, values: t.values}.BuildRequest()
+		return formSender{endpoint: t.endpoint, values: t.values, attachments: t.attachments, blocks: t.blocks}.BuildRequestContext(ctx)
 	}
 }
 
 type formSender struct {
-	endpoint string
-	values   url.Values
+	endpoint    string
+	values      url.Values
+	attachments []Attachment
+	blocks      Blocks
 }
 
 func (t formSender) BuildRequest() (*http.Request, func(*chatResponseFull) responseParser, error) {
-	req, err := formReq(t.endpoint, t.values)
+	return t.BuildRequestContext(context.Background())
+}
+
+func (t formSender) BuildRequestContext(ctx context.Context) (*http.Request, func(*chatResponseFull) responseParser, error) {
+	if t.attachments != nil {
+		attachmentBytes, err := json.Marshal(t.attachments)
+		if err != nil {
+			return nil, nil, err
+		}
+		t.values.Set("attachments", string(attachmentBytes))
+	}
+
+	if t.blocks.BlockSet != nil {
+		blockBytes, err := json.Marshal(t.blocks.BlockSet)
+		if err != nil {
+			return nil, nil, err
+		}
+		t.values.Set("blocks", string(blockBytes))
+	}
+
+	req, err := formReq(ctx, t.endpoint, t.values)
 	return req, func(resp *chatResponseFull) responseParser {
 		return newJSONParser(resp)
 	}, err
@@ -310,6 +417,7 @@ type responseURLSender struct {
 	endpoint        string
 	values          url.Values
 	attachments     []Attachment
+	metadata        SlackMetadata
 	blocks          Blocks
 	responseType    string
 	replaceOriginal bool
@@ -317,11 +425,17 @@ type responseURLSender struct {
 }
 
 func (t responseURLSender) BuildRequest() (*http.Request, func(*chatResponseFull) responseParser, error) {
-	req, err := jsonReq(t.endpoint, Msg{
+	return t.BuildRequestContext(context.Background())
+}
+
+func (t responseURLSender) BuildRequestContext(ctx context.Context) (*http.Request, func(*chatResponseFull) responseParser, error) {
+	req, err := jsonReq(ctx, t.endpoint, Msg{
 		Text:            t.values.Get("text"),
 		Timestamp:       t.values.Get("ts"),
+		ThreadTimestamp: t.values.Get("thread_ts"),
 		Attachments:     t.attachments,
 		Blocks:          t.blocks,
+		Metadata:        t.metadata,
 		ResponseType:    t.responseType,
 		ReplaceOriginal: t.replaceOriginal,
 		DeleteOriginal:  t.deleteOriginal,
@@ -402,6 +516,100 @@ func MsgOptionUnfurl(timestamp string, unfurls map[string]Attachment) MsgOption 
 	}
 }
 
+// MsgOptionUnfurlByID unfurls using unfurl_id and source (e.g. when link is in the composer).
+// Use instead of channel+ts when Slack provides unfurl_id in the link_shared event.
+// unfurls may be nil; the API expects a JSON object so nil is sent as {}.
+func MsgOptionUnfurlByID(unfurlID, source string, unfurls map[string]Attachment) MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatUnfurl)
+		config.values.Del("channel")
+		config.values.Del("ts")
+		config.values.Set("unfurl_id", unfurlID)
+		config.values.Set("source", source)
+		if unfurls == nil {
+			unfurls = make(map[string]Attachment)
+		}
+		unfurlsStr, err := json.Marshal(unfurls)
+		if err == nil {
+			config.values.Set("unfurls", string(unfurlsStr))
+		}
+		return err
+	}
+}
+
+// MsgOptionUnfurlMetadataOnly sets chat.unfurl endpoint with only Work Object metadata (no unfurls).
+func MsgOptionUnfurlMetadataOnly(timestamp string, metadata WorkObjectMetadata) MsgOption {
+	return MsgOptionCompose(
+		func(config *sendConfig) error {
+			config.endpoint = config.apiurl + string(chatUnfurl)
+			config.values.Add("ts", timestamp)
+			return nil
+		},
+		MsgOptionWorkObjectMetadata(metadata),
+	)
+}
+
+// MsgOptionUnfurlWorkObject unfurls a message with Work Objects metadata.
+// When unfurls is nil, only metadata is sent (no legacy attachment unfurls).
+func MsgOptionUnfurlWorkObject(timestamp string, unfurls map[string]Attachment, metadata WorkObjectMetadata) MsgOption {
+	if len(unfurls) > 0 {
+		return MsgOptionCompose(
+			MsgOptionUnfurl(timestamp, unfurls),
+			MsgOptionWorkObjectMetadata(metadata),
+		)
+	}
+	return MsgOptionUnfurlMetadataOnly(timestamp, metadata)
+}
+
+// MsgOptionUnfurlAuthURL unfurls a message using an auth url based on the timestamp.
+func MsgOptionUnfurlAuthURL(timestamp string, userAuthURL string) MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatUnfurl)
+		config.values.Add("ts", timestamp)
+		config.values.Add("user_auth_url", userAuthURL)
+		return nil
+	}
+}
+
+// MsgOptionUnfurlAuthRequired requests that the user installs the
+// Slack app for unfurling.
+func MsgOptionUnfurlAuthRequired(timestamp string) MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatUnfurl)
+		config.values.Add("ts", timestamp)
+		config.values.Add("user_auth_required", "true")
+		return nil
+	}
+}
+
+// MsgOptionUnfurlAuthMessage attaches a message inviting the user to
+// authenticate.
+func MsgOptionUnfurlAuthMessage(timestamp string, msg string) MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatUnfurl)
+		config.values.Add("ts", timestamp)
+		config.values.Add("user_auth_message", msg)
+		return nil
+	}
+}
+
+// MsgOptionUnfurlAuthBlocks sets Block Kit blocks for the auth prompt (overrides default buttons).
+// See https://docs.slack.com/methods/chat.unfurl for user_auth_blocks.
+func MsgOptionUnfurlAuthBlocks(timestamp string, blocks ...Block) MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatUnfurl)
+		config.values.Add("ts", timestamp)
+		if len(blocks) == 0 {
+			return nil
+		}
+		blocksStr, err := json.Marshal(blocks)
+		if err == nil {
+			config.values.Set("user_auth_blocks", string(blocksStr))
+		}
+		return err
+	}
+}
+
 // MsgOptionResponseURL supplies a url to use as the endpoint.
 func MsgOptionResponseURL(url string, responseType string) MsgOption {
 	return func(config *sendConfig) error {
@@ -436,6 +644,7 @@ func MsgOptionDeleteOriginal(responseURL string) MsgOption {
 // MsgOptionAsUser whether or not to send the message as the user.
 func MsgOptionAsUser(b bool) MsgOption {
 	return func(config *sendConfig) error {
+		//lint:ignore S1002 - we want to explicitly check against the constant
 		if b != DEFAULT_MESSAGE_ASUSER {
 			config.values.Set("as_user", "true")
 		}
@@ -480,33 +689,24 @@ func MsgOptionAttachments(attachments ...Attachment) MsgOption {
 
 		config.attachments = attachments
 
-		// FIXME: We are setting the attachments on the message twice: above for
-		// the json version, and below for the html version.  The marshalled bytes
-		// we put into config.values below don't work directly in the Msg version.
-
-		attachmentBytes, err := json.Marshal(attachments)
-		if err == nil {
-			config.values.Set("attachments", string(attachmentBytes))
-		}
-
-		return err
+		return nil
 	}
 }
 
-// MsgOptionBlocks sets blocks for the message
+// MsgOptionBlocks sets blocks for the message.
+// Calling with no arguments or an empty slice sends "blocks=[]" to clear blocks.
+// To skip setting blocks entirely, do not include this option.
 func MsgOptionBlocks(blocks ...Block) MsgOption {
 	return func(config *sendConfig) error {
-		if blocks == nil {
-			return nil
+		if len(blocks) == 0 {
+			// Explicitly set to empty slice (not nil) so the sender
+			// knows to marshal "[]" and clear blocks on the message.
+			config.blocks.BlockSet = []Block{}
+		} else {
+			config.blocks.BlockSet = append(config.blocks.BlockSet, blocks...)
 		}
 
-		config.blocks.BlockSet = append(config.blocks.BlockSet, blocks...)
-
-		blocks, err := json.Marshal(blocks)
-		if err == nil {
-			config.values.Set("blocks", string(blocks))
-		}
-		return err
+		return nil
 	}
 }
 
@@ -560,9 +760,9 @@ func MsgOptionBroadcast() MsgOption {
 
 // MsgOptionCompose combines multiple options into a single option.
 func MsgOptionCompose(options ...MsgOption) MsgOption {
-	return func(c *sendConfig) error {
+	return func(config *sendConfig) error {
 		for _, opt := range options {
-			if err := opt(c); err != nil {
+			if err := opt(config); err != nil {
 				return err
 			}
 		}
@@ -572,30 +772,160 @@ func MsgOptionCompose(options ...MsgOption) MsgOption {
 
 // MsgOptionParse set parse option.
 func MsgOptionParse(b bool) MsgOption {
-	return func(c *sendConfig) error {
+	return func(config *sendConfig) error {
 		var v string
 		if b {
 			v = "full"
 		} else {
 			v = "none"
 		}
-		c.values.Set("parse", v)
+		config.values.Set("parse", v)
 		return nil
 	}
 }
 
 // MsgOptionIconURL sets an icon URL
 func MsgOptionIconURL(iconURL string) MsgOption {
-	return func(c *sendConfig) error {
-		c.values.Set("icon_url", iconURL)
+	return func(config *sendConfig) error {
+		config.values.Set("icon_url", iconURL)
 		return nil
 	}
 }
 
 // MsgOptionIconEmoji sets an icon emoji
 func MsgOptionIconEmoji(iconEmoji string) MsgOption {
-	return func(c *sendConfig) error {
-		c.values.Set("icon_emoji", iconEmoji)
+	return func(config *sendConfig) error {
+		config.values.Set("icon_emoji", iconEmoji)
+		return nil
+	}
+}
+
+// MsgOptionMetadata sets message metadata
+func MsgOptionMetadata(metadata SlackMetadata) MsgOption {
+	return func(config *sendConfig) error {
+		config.metadata = metadata
+		meta, err := json.Marshal(metadata)
+		if err == nil {
+			config.values.Set("metadata", string(meta))
+		}
+		return err
+	}
+}
+
+// MsgOptionWorkObjectMetadata sets Work Objects metadata for unfurls and messages
+// This enables Work Objects support as described in https://docs.slack.dev/messaging/work-objects/
+// If metadata.Entities is nil, it is marshaled as [] so the API receives a valid entities array.
+func MsgOptionWorkObjectMetadata(metadata WorkObjectMetadata) MsgOption {
+	return func(config *sendConfig) error {
+		metaToMarshal := metadata
+		if metaToMarshal.Entities == nil {
+			metaToMarshal.Entities = []WorkObjectEntity{}
+		}
+		meta, err := json.Marshal(metaToMarshal)
+		if err == nil {
+			config.values.Set("metadata", string(meta))
+		}
+		return err
+	}
+}
+
+// MsgOptionWorkObjectEntity creates Work Objects metadata with a single entity
+// This is a convenience function for the common case of unfurling a single Work Object
+func MsgOptionWorkObjectEntity(entity WorkObjectEntity) MsgOption {
+	return MsgOptionWorkObjectMetadata(WorkObjectMetadata{
+		Entities: []WorkObjectEntity{entity},
+	})
+}
+
+// MsgOptionLinkNames finds and links user groups. Does not support linking individual users
+func MsgOptionLinkNames(linkName bool) MsgOption {
+	return func(config *sendConfig) error {
+		config.values.Set("link_names", strconv.FormatBool(linkName))
+		return nil
+	}
+}
+
+// MsgOptionFileIDs sets file IDs for the message
+func MsgOptionFileIDs(fileIDs []string) MsgOption {
+	return func(config *sendConfig) error {
+		if len(fileIDs) == 0 {
+			return nil
+		}
+
+		fileIDsBytes, err := json.Marshal(fileIDs)
+		if err != nil {
+			return err
+		}
+
+		config.values.Set("file_ids", string(fileIDsBytes))
+		return nil
+	}
+}
+
+// MsgOptionStartStream starts a streaming message.
+func MsgOptionStartStream() MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatStartStream)
+		return nil
+	}
+}
+
+// MsgOptionAppendStream appends to a streaming message.
+func MsgOptionAppendStream(timestamp string) MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatAppendStream)
+		config.values.Add("ts", timestamp)
+		return nil
+	}
+}
+
+// MsgOptionStopStream stops a streaming message.
+func MsgOptionStopStream(timestamp string) MsgOption {
+	return func(config *sendConfig) error {
+		config.endpoint = config.apiurl + string(chatStopStream)
+		config.values.Add("ts", timestamp)
+		return nil
+	}
+}
+
+// MsgOptionRecipientTeamID sets the recipient team ID for streaming messages.
+func MsgOptionRecipientTeamID(teamID string) MsgOption {
+	return func(config *sendConfig) error {
+		config.values.Set("recipient_team_id", teamID)
+		return nil
+	}
+}
+
+// MsgOptionRecipientUserID sets the recipient user ID for streaming messages.
+func MsgOptionRecipientUserID(userID string) MsgOption {
+	return func(config *sendConfig) error {
+		config.values.Set("recipient_user_id", userID)
+		return nil
+	}
+}
+
+// MsgOptionMarkdownText sets the markdown text for streaming messages.
+func MsgOptionMarkdownText(text string) MsgOption {
+	return func(config *sendConfig) error {
+		config.values.Set("markdown_text", text)
+		return nil
+	}
+}
+
+// TaskDisplayMode controls how task_card / task_update chunks render in a
+// streamed message. Used with chat.startStream.
+type TaskDisplayMode string
+
+const (
+	TaskDisplayModeTimeline TaskDisplayMode = "timeline"
+	TaskDisplayModePlan     TaskDisplayMode = "plan"
+)
+
+// MsgOptionTaskDisplayMode sets task_display_mode on chat.startStream,
+// controlling whether tasks render as a sequential timeline or a grouped plan.
+func MsgOptionTaskDisplayMode(mode TaskDisplayMode) MsgOption {
+	return func(config *sendConfig) error {
+		config.values.Set("task_display_mode", string(mode))
 		return nil
 	}
 }
@@ -634,15 +964,19 @@ func MsgOptionPostMessageParameters(params PostMessageParameters) MsgOption {
 			config.values.Set("link_names", "1")
 		}
 
+		//lint:ignore S1002 - we want to explicitly check against the constant
 		if params.UnfurlLinks != DEFAULT_MESSAGE_UNFURL_LINKS {
 			config.values.Set("unfurl_links", "true")
 		}
 
 		// I want to send a message with explicit `as_user` `true` and `unfurl_links` `false` in request.
 		// Because setting `as_user` to `true` will change the default value for `unfurl_links` to `true` on Slack API side.
+		//lint:ignore S1002 - we want to explicitly check against the constants
 		if params.AsUser != DEFAULT_MESSAGE_ASUSER && params.UnfurlLinks == DEFAULT_MESSAGE_UNFURL_LINKS {
 			config.values.Set("unfurl_links", "false")
 		}
+
+		//lint:ignore S1002 - we want to explicitly check against the constant
 		if params.UnfurlMedia != DEFAULT_MESSAGE_UNFURL_MEDIA {
 			config.values.Set("unfurl_media", "false")
 		}
@@ -652,6 +986,7 @@ func MsgOptionPostMessageParameters(params PostMessageParameters) MsgOption {
 		if params.IconEmoji != DEFAULT_MESSAGE_ICON_EMOJI {
 			config.values.Set("icon_emoji", params.IconEmoji)
 		}
+		//lint:ignore S1002 - we want to explicitly check against the constant
 		if params.Markdown != DEFAULT_MESSAGE_MARKDOWN {
 			config.values.Set("mrkdwn", "false")
 		}
@@ -659,33 +994,42 @@ func MsgOptionPostMessageParameters(params PostMessageParameters) MsgOption {
 		if params.ThreadTimestamp != DEFAULT_MESSAGE_THREAD_TIMESTAMP {
 			config.values.Set("thread_ts", params.ThreadTimestamp)
 		}
+		//lint:ignore S1002 - we want to explicitly check against the constant
 		if params.ReplyBroadcast != DEFAULT_MESSAGE_REPLY_BROADCAST {
 			config.values.Set("reply_broadcast", "true")
+		}
+
+		if params.MetaData.EventType != "" {
+			if err := MsgOptionMetadata(params.MetaData)(config); err != nil {
+				return err
+			}
+		}
+
+		if len(params.FileIDs) > 0 {
+			return MsgOptionFileIDs(params.FileIDs)(config)
 		}
 
 		return nil
 	}
 }
 
-// PermalinkParameters are the parameters required to get a permalink to a
-// message. Slack documentation can be found here:
-// https://api.slack.com/methods/chat.getPermalink
+// PermalinkParameters are the parameters required to get a permalink to a message.
 type PermalinkParameters struct {
 	Channel string
 	Ts      string
 }
 
-// GetPermalink returns the permalink for a message. It takes
-// PermalinkParameters and returns a string containing the permalink. It
-// returns an error if unable to retrieve the permalink.
+// GetPermalink returns the permalink for a message. It takes PermalinkParameters and returns a string containing the
+// permalink. It returns an error if unable to retrieve the permalink.
+// For more details, see GetPermalinkContext documentation.
 func (api *Client) GetPermalink(params *PermalinkParameters) (string, error) {
 	return api.GetPermalinkContext(context.Background(), params)
 }
 
 // GetPermalinkContext returns the permalink for a message using a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.getPermalink
 func (api *Client) GetPermalinkContext(ctx context.Context, params *PermalinkParameters) (string, error) {
 	values := url.Values{
-		"token":      {api.token},
 		"channel":    {params.Channel},
 		"message_ts": {params.Ts},
 	}
@@ -695,7 +1039,7 @@ func (api *Client) GetPermalinkContext(ctx context.Context, params *PermalinkPar
 		Permalink string `json:"permalink"`
 		SlackResponse
 	}{}
-	err := api.getMethod(ctx, "chat.getPermalink", values, &response)
+	err := api.getMethod(ctx, "chat.getPermalink", api.token, values, &response)
 	if err != nil {
 		return "", err
 	}
@@ -704,24 +1048,30 @@ func (api *Client) GetPermalinkContext(ctx context.Context, params *PermalinkPar
 
 type GetScheduledMessagesParameters struct {
 	Channel string
+	TeamID  string
 	Cursor  string
 	Latest  string
 	Limit   int
 	Oldest  string
 }
 
-// GetScheduledMessages returns the list of scheduled messages based on params
-func (api *Client) GetScheduledMessages(params *GetScheduledMessagesParameters) (channels []Message, nextCursor string, err error) {
+// GetScheduledMessages returns the list of scheduled messages based on params.
+// For more details, see GetScheduledMessagesContext documentation.
+func (api *Client) GetScheduledMessages(params *GetScheduledMessagesParameters) (channels []ScheduledMessage, nextCursor string, err error) {
 	return api.GetScheduledMessagesContext(context.Background(), params)
 }
 
-// GetScheduledMessagesContext returns the list of scheduled messages in a Slack team with a custom context
-func (api *Client) GetScheduledMessagesContext(ctx context.Context, params *GetScheduledMessagesParameters) (channels []Message, nextCursor string, err error) {
+// GetScheduledMessagesContext returns the list of scheduled messages based on params with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.getScheduledMessages.list
+func (api *Client) GetScheduledMessagesContext(ctx context.Context, params *GetScheduledMessagesParameters) (channels []ScheduledMessage, nextCursor string, err error) {
 	values := url.Values{
 		"token": {api.token},
 	}
 	if params.Channel != "" {
 		values.Add("channel", params.Channel)
+	}
+	if params.TeamID != "" {
+		values.Add("team_id", params.TeamID)
 	}
 	if params.Cursor != "" {
 		values.Add("cursor", params.Cursor)
@@ -736,8 +1086,8 @@ func (api *Client) GetScheduledMessagesContext(ctx context.Context, params *GetS
 		values.Add("oldest", params.Oldest)
 	}
 	response := struct {
-		Messages         []Message        `json:"scheduled_messages"`
-		ResponseMetaData responseMetaData `json:"response_metadata"`
+		Messages         []ScheduledMessage `json:"scheduled_messages"`
+		ResponseMetaData responseMetaData   `json:"response_metadata"`
 		SlackResponse
 	}{}
 
@@ -755,12 +1105,14 @@ type DeleteScheduledMessageParameters struct {
 	AsUser             bool
 }
 
-// DeleteScheduledMessage returns the list of scheduled messages based on params
+// DeleteScheduledMessage deletes a pending scheduled message.
+// For more details, see DeleteScheduledMessageContext documentation.
 func (api *Client) DeleteScheduledMessage(params *DeleteScheduledMessageParameters) (bool, error) {
 	return api.DeleteScheduledMessageContext(context.Background(), params)
 }
 
-// DeleteScheduledMessageContext returns the list of scheduled messages in a Slack team with a custom context
+// DeleteScheduledMessageContext deletes a pending scheduled message with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.deleteScheduledMessage
 func (api *Client) DeleteScheduledMessageContext(ctx context.Context, params *DeleteScheduledMessageParameters) (bool, error) {
 	values := url.Values{
 		"token":                {api.token},
@@ -778,4 +1130,58 @@ func (api *Client) DeleteScheduledMessageContext(ctx context.Context, params *De
 	}
 
 	return response.Ok, response.Err()
+}
+
+// StartStream starts a streaming message in a channel.
+// For more details, see StartStreamContext documentation.
+func (api *Client) StartStream(channelID string, options ...MsgOption) (string, string, error) {
+	return api.StartStreamContext(context.Background(), channelID, options...)
+}
+
+// StartStreamContext starts a streaming message in a channel with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.startStream
+func (api *Client) StartStreamContext(ctx context.Context, channelID string, options ...MsgOption) (string, string, error) {
+	respChannel, respTimestamp, _, err := api.SendMessageContext(
+		ctx,
+		channelID,
+		MsgOptionStartStream(),
+		MsgOptionCompose(options...),
+	)
+	return respChannel, respTimestamp, err
+}
+
+// AppendStream appends text to a streaming message.
+// For more details, see AppendStreamContext documentation.
+func (api *Client) AppendStream(channelID, timestamp string, options ...MsgOption) (string, string, error) {
+	return api.AppendStreamContext(context.Background(), channelID, timestamp, options...)
+}
+
+// AppendStreamContext appends text to a streaming message with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.appendStream
+func (api *Client) AppendStreamContext(ctx context.Context, channelID, timestamp string, options ...MsgOption) (string, string, error) {
+	respChannel, respTimestamp, _, err := api.SendMessageContext(
+		ctx,
+		channelID,
+		MsgOptionAppendStream(timestamp),
+		MsgOptionCompose(options...),
+	)
+	return respChannel, respTimestamp, err
+}
+
+// StopStream stops a streaming message.
+// For more details, see StopStreamContext documentation.
+func (api *Client) StopStream(channelID, timestamp string, options ...MsgOption) (string, string, error) {
+	return api.StopStreamContext(context.Background(), channelID, timestamp, options...)
+}
+
+// StopStreamContext stops a streaming message with a custom context.
+// Slack API docs: https://api.slack.com/methods/chat.stopStream
+func (api *Client) StopStreamContext(ctx context.Context, channelID, timestamp string, options ...MsgOption) (string, string, error) {
+	respChannel, respTimestamp, _, err := api.SendMessageContext(
+		ctx,
+		channelID,
+		MsgOptionStopStream(timestamp),
+		MsgOptionCompose(options...),
+	)
+	return respChannel, respTimestamp, err
 }

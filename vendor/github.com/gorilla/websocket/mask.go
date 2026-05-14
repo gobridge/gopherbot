@@ -2,6 +2,7 @@
 // this source code is governed by a BSD-style license that can be found in the
 // LICENSE file.
 
+//go:build !appengine
 // +build !appengine
 
 package websocket
@@ -11,7 +12,6 @@ import "unsafe"
 const wordSize = int(unsafe.Sizeof(uintptr(0)))
 
 func maskBytes(key [4]byte, pos int, b []byte) int {
-
 	// Mask one byte at a time for small buffers.
 	if len(b) < 2*wordSize {
 		for i := range b {
