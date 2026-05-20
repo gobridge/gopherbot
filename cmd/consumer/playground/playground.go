@@ -183,8 +183,20 @@ func (c *Client) MessageMatchFn(shadowMode bool, m handler.Messenger) bool {
 
 	rt := m.RawText()
 
-	if strings.Contains(rt, "nolink") || (len(m.Files()) == 0 && strings.Count(rt, "\n") < 10) {
+	if strings.Contains(rt, "nolink") {
 		return false
+	}
+
+	// For messages without a file attachment, only trigger on a sufficiently
+	// large block that actually looks like code. We count the lines *within*
+	// fenced code blocks rather than the whole message, so a couple of code
+	// lines buried in a long prose post don't trip the threshold.
+	if len(m.Files()) == 0 {
+		code := codeContent(rt)
+
+		if codeLineCount(code) <= 9 || !looksLikeCode(code) {
+			return false
+		}
 	}
 
 	if shadowMode {
@@ -233,3 +245,81 @@ func messageToPlayground(text string) *bytes.Buffer {
 
 	return &buf
 }
+
+// codeContent returns the text we should treat as code when deciding whether to
+// match. If the message contains fenced (```) blocks, only the content inside
+// those fences is returned; otherwise the whole message is returned, preserving
+// the historic behaviour for unfenced pastes.
+func codeContent(text string) string {
+	text = html.UnescapeString(text)
+
+	if !strings.Contains(text, "```") {
+		return strings.Trim(text, "\n")
+	}
+
+	var b strings.Builder
+
+	parts := strings.Split(text, "```")
+	for i, part := range parts {
+		// odd indexes are inside a pair of ``` fences
+		if i&1 == 1 {
+			part = strings.Trim(part, "\n")
+			if part == "" {
+				continue
+			}
+
+			if b.Len() > 0 {
+				b.WriteByte('\n')
+			}
+
+			b.WriteString(part)
+		}
+	}
+
+	return b.String()
+}
+
+// codeLineCount returns the number of lines in s.
+func codeLineCount(s string) int {
+	s = strings.Trim(s, "\n")
+	if s == "" {
+		return 0
+	}
+
+	return strings.Count(s, "\n") + 1
+}
+
+// looksLikeCode applies cheap heuristics to guess whether a block is actually
+// source code, rather than prose, log output, or a list someone happened to
+// wrap in backticks. It is intentionally conservative: it errs towards treating
+// ambiguous content as code so we don't drop legitimate snippets.
+func looksLikeCode(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return false
+	}
+
+	// Real code almost always contains parentheses or brackets (calls, blocks,
+	// indexing, composite literals). Their complete absence is a strong signal
+	// that this is prose rather than code.
+	if !strings.ContainsAny(s, "(){}[]") {
+		return false
+	}
+
+	// Beyond a stray parenthetical, code is dense with operators and
+	// separators. Require at least one such token so that prose like
+	// "use the new API (coming soon) for everything" doesn't match on its
+	// parentheses alone. We deliberately avoid English-ambiguous keywords
+	// (for, if, type, range, ...) here, since they show up in normal sentences.
+	for _, tok := range []string{
+		":=", "==", "!=", ">=", "<=", "<-", "=>", "->", "&&", "||",
+		";", "{", "}", "=", "func ", "package ",
+	} {
+		if strings.Contains(s, tok) {
+			return true
+		}
+	}
+
+	return false
+}
+
